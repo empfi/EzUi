@@ -1001,6 +1001,13 @@ function EZUI:_unbindKeys()
     ContextActionService:UnbindAction(BLOCK_NAME)
 end
 
+local function isWASDDown()
+    return UserInputService:IsKeyDown(Enum.KeyCode.W) 
+        or UserInputService:IsKeyDown(Enum.KeyCode.A) 
+        or UserInputService:IsKeyDown(Enum.KeyCode.S) 
+        or UserInputService:IsKeyDown(Enum.KeyCode.D)
+end
+
 function EZUI:_stopKeyHold()
     self.ActiveHeldKey = nil
     if self.HoldThread then
@@ -1010,6 +1017,15 @@ function EZUI:_stopKeyHold()
 end
 
 function EZUI:_processKeyAction(keyCode)
+    -- Prevent character movement caused by arrow keys when WASD is not held
+    if not isWASDDown() then
+        local char = LocalPlayer.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum:Move(Vector3.zero, false)
+        end
+    end
+
     local items = self:GetItems()
     if keyCode == Enum.KeyCode.Up then
         if #items == 0 then return end
