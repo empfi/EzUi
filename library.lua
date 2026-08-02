@@ -695,36 +695,58 @@ function EZUI:GetItems()
 end
 
 function EZUI:_updateSidePanel()
+    if not self.SidePanel then return end
+
     local items = self:GetItems()
     local item = items[self.SelectedIndex]
     
     if item and item.preview then
         local p = item.preview
         self.SidePanel.Visible = true
-        self.SideTitle.Text = p.title or "Preview"
+        if self.SideTitle then
+            self.SideTitle.Text = p.title or "Preview"
+        end
         
         if p.type == "text" or p.text then
-            self.PreviewText.Text = p.text or ""
-            self.PreviewText.Visible = true
-            self.PreviewImage.Visible = false
+            if self.PreviewText then
+                self.PreviewText.Text = p.text or ""
+                self.PreviewText.Visible = true
+            end
+            if self.PreviewImage then
+                self.PreviewImage.Visible = false
+            end
         elseif p.type == "image" or p.image or p.id then
             local imgId = p.image or p.id or ""
-            self.PreviewImage.Image = imgId
-            self.PreviewImage.Visible = true
-            self.PreviewText.Visible = false
+            if self.PreviewImage then
+                self.PreviewImage.Image = imgId
+                self.PreviewImage.Visible = true
+            end
+            if self.PreviewText then
+                self.PreviewText.Visible = false
+            end
         else
-            self.PreviewText.Text = ""
-            self.PreviewText.Visible = true
-            self.PreviewImage.Visible = false
+            if self.PreviewText then
+                self.PreviewText.Text = ""
+                self.PreviewText.Visible = true
+            end
+            if self.PreviewImage then
+                self.PreviewImage.Visible = false
+            end
         end
     elseif item and (item.isBanner or item.name == "Banner") and item.options then
         self.SidePanel.Visible = true
-        self.SideTitle.Text = "Banner Preview"
+        if self.SideTitle then
+            self.SideTitle.Text = "Banner Preview"
+        end
         local opt = item.options[item.value]
         if opt then
-            self.PreviewImage.Image = opt.id or ""
-            self.PreviewImage.Visible = true
-            self.PreviewText.Visible = false
+            if self.PreviewImage then
+                self.PreviewImage.Image = opt.id or ""
+                self.PreviewImage.Visible = true
+            end
+            if self.PreviewText then
+                self.PreviewText.Visible = false
+            end
         end
     else
         self.SidePanel.Visible = false
