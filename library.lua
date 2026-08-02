@@ -541,6 +541,54 @@ function EZUI:_buildGui()
     local previewCorner = Instance.new("UICorner")
     previewCorner.CornerRadius = UDim.new(0, 4)
     previewCorner.Parent = previewImage
+
+    local previewText = Instance.new("TextLabel")
+    previewText.Size = UDim2.new(1, -20, 1, -40)
+    previewText.Position = UDim2.fromOffset(10, 32)
+    previewText.BackgroundTransparency = 1
+    previewText.Font = Enum.Font.Gotham
+    previewText.TextSize = 11
+    previewText.TextColor3 = self.Theme.TextGray
+    previewText.TextWrapped = true
+    previewText.TextYAlignment = Enum.TextYAlignment.Top
+    previewText.TextXAlignment = Enum.TextXAlignment.Left
+    previewText.Visible = false
+    previewText.Parent = sidePanel
+    self.PreviewText = previewText
+end
+
+function EZUI:SetOpacity(val)
+    local pct = math.clamp(tonumber(val) or 85, 0, 100) / 100
+    self.OpacityFraction = pct
+    
+    local transBg = 1 - (0.85 * pct)
+    local transSolid = 1 - (1.0 * pct)
+    
+    if self.Window then self.Window.BackgroundTransparency = transBg end
+    if self.Banner then self.Banner.BackgroundTransparency = transSolid end
+    if self.BannerFiller then self.BannerFiller.BackgroundTransparency = transSolid end
+    if self.BannerImage then self.BannerImage.ImageTransparency = transSolid end
+    if self.TabBar then self.TabBar.BackgroundTransparency = transSolid end
+    if self.HighlightBox then self.HighlightBox.BackgroundTransparency = transBg end
+    if self.FooterBar then self.FooterBar.BackgroundTransparency = transSolid end
+    if self.FooterFiller then self.FooterFiller.BackgroundTransparency = transSolid end
+    if self.SidePanel then self.SidePanel.BackgroundTransparency = transBg end
+    if self.PreviewImage then self.PreviewImage.ImageTransparency = transSolid end
+    if self.SideTopAccent then self.SideTopAccent.BackgroundTransparency = transSolid end
+    
+    if self.EzLogoText then self.EzLogoText.TextTransparency = transSolid end
+    if self.EzLogoImage then self.EzLogoImage.ImageTransparency = transSolid end
+    if self.TitleText then self.TitleText.TextTransparency = transSolid end
+    if self.FooterLeft then self.FooterLeft.TextTransparency = transSolid end
+    if self.FooterCounter then self.FooterCounter.TextTransparency = transSolid end
+end
+
+function EZUI:SetSidePreview(item, previewConfig)
+    if type(item) == "table" then
+        item.preview = previewConfig
+    end
+    self:_updateSidePanel()
+    return item
 end
 
 ----------------------------------------------------------------
@@ -646,13 +694,34 @@ end
 function EZUI:_updateSidePanel()
     local items = self:GetItems()
     local item = items[self.SelectedIndex]
-    if item and (item.isBanner or item.name == "Banner") and item.options then
+    
+    if item and item.preview then
+        local p = item.preview
         self.SidePanel.Visible = true
-        local opt = item.options[item.value]
-        if opt and opt.id ~= "" then
-            self.PreviewImage.Image = opt.id
+        self.SideTitle.Text = p.title or "Preview"
+        
+        if p.type == "text" or p.text then
+            self.PreviewText.Text = p.text or ""
+            self.PreviewText.Visible = true
+            self.PreviewImage.Visible = false
+        elseif p.type == "image" or p.image or p.id then
+            local imgId = p.image or p.id or ""
+            self.PreviewImage.Image = imgId
+            self.PreviewImage.Visible = true
+            self.PreviewText.Visible = false
         else
-            self.PreviewImage.Image = ""
+            self.PreviewText.Text = ""
+            self.PreviewText.Visible = true
+            self.PreviewImage.Visible = false
+        end
+    elseif item and (item.isBanner or item.name == "Banner") and item.options then
+        self.SidePanel.Visible = true
+        self.SideTitle.Text = "Banner Preview"
+        local opt = item.options[item.value]
+        if opt then
+            self.PreviewImage.Image = opt.id or ""
+            self.PreviewImage.Visible = true
+            self.PreviewText.Visible = false
         end
     else
         self.SidePanel.Visible = false
