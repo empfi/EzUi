@@ -521,6 +521,7 @@ function EZUI:_buildGui()
     sideTitle.TextColor3 = self.Theme.TextWhite
     sideTitle.TextXAlignment = Enum.TextXAlignment.Left
     sideTitle.Parent = sidePanel
+    self.SideTitle = sideTitle
 
     local sideTopAccent = Instance.new("Frame")
     sideTopAccent.Size = UDim2.new(1, 0, 0, 2)
@@ -579,6 +580,8 @@ function EZUI:SetOpacity(val)
     if self.EzLogoText then self.EzLogoText.TextTransparency = transSolid end
     if self.EzLogoImage then self.EzLogoImage.ImageTransparency = transSolid end
     if self.TitleText then self.TitleText.TextTransparency = transSolid end
+    if self.SideTitle then self.SideTitle.TextTransparency = transSolid end
+    if self.PreviewText then self.PreviewText.TextTransparency = transSolid end
     if self.FooterLeft then self.FooterLeft.TextTransparency = transSolid end
     if self.FooterCounter then self.FooterCounter.TextTransparency = transSolid end
 end
