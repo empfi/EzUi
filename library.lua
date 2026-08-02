@@ -229,17 +229,48 @@ end
 function EZUI:SetLogo(logo)
     if not logo then return end
     local logoStr = tostring(logo)
-    local isAsset = logoStr:find("rbxasset") or logoStr:find("http") or logoStr:find("://") or (tonumber(logo) ~= nil)
-    
+    local digits = logoStr:match("%d+")
+    local isAsset = logoStr:find("rbxasset") 
+                 or logoStr:find("rbxthumb") 
+                 or logoStr:find("http") 
+                 or logoStr:find("://") 
+                 or (digits and #digits >= 5)
+
     if isAsset then
-        local assetId = (tonumber(logo) ~= nil) and ("rbxassetid://" .. tostring(logo)) or logoStr
-        self.EzLogoImage.Image = assetId
-        self.EzLogoImage.Visible = true
-        self.EzLogoText.Visible = false
+        local assetId = logoStr
+        if not logoStr:find("://") and digits then
+            assetId = "rbxassetid://" .. digits
+        end
+        if self.EzLogoImage then
+            self.EzLogoImage.Image = assetId
+            self.EzLogoImage.BackgroundTransparency = 1
+            self.EzLogoImage.ImageTransparency = 0
+            self.EzLogoImage.Visible = true
+        end
+        if self.EzLogoText then
+            self.EzLogoText.Visible = false
+        end
     else
-        self.EzLogoText.Text = logoStr
-        self.EzLogoText.Visible = true
-        self.EzLogoImage.Visible = false
+        if self.EzLogoText then
+            self.EzLogoText.Text = logoStr
+            self.EzLogoText.Visible = true
+        end
+        if self.EzLogoImage then
+            self.EzLogoImage.Visible = false
+        end
+    end
+end
+
+function EZUI:SetWatermarkVisible(visible)
+    if self.EzLogoImage and self.EzLogoImage.Image ~= "" then
+        self.EzLogoImage.Visible = visible
+        if self.EzLogoText then self.EzLogoText.Visible = false end
+    elseif self.EzLogoText then
+        self.EzLogoText.Visible = visible
+        if self.EzLogoImage then self.EzLogoImage.Visible = false end
+    end
+    if self.TitleText then
+        self.TitleText.Visible = visible
     end
 end
 
