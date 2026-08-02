@@ -1,5 +1,12 @@
 --[[
     EZUI — Premium Minimalist Roblox UI Library
+    
+    Features:
+    - Fixed Left-Side Position (No Dragging)
+    - Full Theme & Accent Color Customization (Presets: Green, Purple, Blue, Red, Cyan, Dark)
+    - Built-in Native Banner Image System & Live Banner Preview Side Panel
+    - Hold-to-Repeat Navigation & Slider adjustment
+    - Non-intrusive input sinking (WASD movement & Mouse Look preserved)
 ]]
 
 local Players              = game:GetService("Players")
@@ -105,6 +112,27 @@ local function tween(obj, time, props)
     return t
 end
 
+local function cleanupExistingUI()
+    if getgenv then
+        local active = getgenv().EZUI_ActiveInstance
+        if active and typeof(active) == "table" and active.Destroy then
+            pcall(function() active:Destroy() end)
+        end
+        getgenv().EZUI_ActiveInstance = nil
+    end
+
+    local parents = {CoreGui, LocalPlayer:FindFirstChild("PlayerGui")}
+    for _, parent in ipairs(parents) do
+        if parent then
+            for _, child in ipairs(parent:GetChildren()) do
+                if child.Name == "EZUI_Library" or child.Name == "EZCleanUI" then
+                    pcall(function() child:Destroy() end)
+                end
+            end
+        end
+    end
+end
+
 ----------------------------------------------------------------
 -- EZUI LIBRARY CLASS
 ----------------------------------------------------------------
@@ -114,6 +142,7 @@ EZUI.Presets = PRESET_THEMES
 EZUI.BannerPresets = BANNER_PRESETS
 
 function EZUI.new(config)
+    cleanupExistingUI()
     config = config or {}
     local self = setmetatable({}, EZUI)
     
@@ -142,6 +171,7 @@ function EZUI.new(config)
     self.ScrollOffset = 0
     self.MenuVisible = true
     self.RowInstances = {}
+    self.Connections = {}
     self.ActiveHeldKey = nil
     self.HoldThread = nil
     
@@ -152,7 +182,28 @@ function EZUI.new(config)
         self:SetBanner(config.Banner)
     end
     
+    if getgenv then
+        getgenv().EZUI_ActiveInstance = self
+    end
+
     return self
+end
+
+function EZUI:Destroy()
+    self:_stopKeyHold()
+    self:_unbindKeys()
+    if self.Connections then
+        for _, conn in ipairs(self.Connections) do
+            pcall(function() conn:Disconnect() end)
+        end
+        table.clear(self.Connections)
+    end
+    if self.Gui then
+        pcall(function() self.Gui:Destroy() end)
+    end
+    if getgenv and getgenv().EZUI_ActiveInstance == self then
+        getgenv().EZUI_ActiveInstance = nil
+    end
 end
 
 function EZUI:SetTheme(themePresetOrTable)
@@ -957,7 +1008,7 @@ function EZUI:_startKeyHold(keyCode)
 end
 
 function EZUI:_setupInputs()
-    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    local conn1 = UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if input.KeyCode == self.ToggleKey then
             self.MenuVisible = not self.MenuVisible
             self.Window.Visible = self.MenuVisible
@@ -991,12 +1042,14 @@ function EZUI:_setupInputs()
             self:_startKeyHold(input.KeyCode)
         end
     end)
+    table.insert(self.Connections, conn1)
 
-    UserInputService.InputEnded:Connect(function(input)
+    local conn2 = UserInputService.InputEnded:Connect(function(input)
         if input.KeyCode == self.ActiveHeldKey then
             self:_stopKeyHold()
         end
     end)
+    table.insert(self.Connections, conn2)
 end
 
 return EZUI
