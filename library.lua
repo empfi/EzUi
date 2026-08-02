@@ -1,13 +1,5 @@
 --[[
     EZUI — Premium Minimalist Roblox UI Library
-    
-    Features:
-    - Fixed Left-Side Position (No Dragging)
-    - Full Theme & Accent Color Customization (Presets: Green, Purple, Blue, Red, Cyan, Dark)
-    - Built-in Native Banner Image System & Live Banner Preview Side Panel
-    - Hold-to-Repeat Navigation & Slider adjustment
-    - Non-intrusive input sinking (WASD movement & Mouse Look preserved)
-    - Clean Separator & Sub-menu support
 ]]
 
 local Players              = game:GetService("Players")
