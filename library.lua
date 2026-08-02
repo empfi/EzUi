@@ -4,9 +4,11 @@
     Features:
     - Fixed Left-Side Position (No Dragging)
     - Full Theme & Accent Color Customization (Presets: Green, Purple, Blue, Red, Cyan, Dark)
-    - Built-in Native Banner Image System & Live Banner Preview Side Panel
+    - Customizable Header Logo (Image ID or Text) & Script Title
+    - User-Defined Banner Image Support & Live Side-Panel Preview
     - Hold-to-Repeat Navigation & Slider adjustment
     - Non-intrusive input sinking (WASD movement & Mouse Look preserved)
+    - Automatic Re-execution Teardown & Cleanup
 ]]
 
 local Players              = game:GetService("Players")
@@ -94,12 +96,6 @@ local PRESET_THEMES = {
     }
 }
 
-local BANNER_PRESETS = {
-    {name = "None", id = ""},
-    {name = "Scooby", id = "rbxthumb://type=Asset&id=76117265881255&w=420&h=420"},
-    {name = "Abstract", id = "rbxthumb://type=Asset&id=76802492834754&w=420&h=420"}
-}
-
 local ROW_HEIGHT = 28
 local MAX_VISIBLE = 9
 
@@ -139,7 +135,6 @@ end
 local EZUI = {}
 EZUI.__index = EZUI
 EZUI.Presets = PRESET_THEMES
-EZUI.BannerPresets = BANNER_PRESETS
 
 function EZUI.new(config)
     cleanupExistingUI()
@@ -177,6 +172,10 @@ function EZUI.new(config)
     
     self:_buildGui()
     self:_setupInputs()
+
+    if config.Logo or config.LogoImage or config.LogoText then
+        self:SetLogo(config.Logo or config.LogoImage or config.LogoText)
+    end
 
     if config.Banner then
         self:SetBanner(config.Banner)
@@ -220,6 +219,30 @@ function EZUI:SetAccentColor(color3)
     self:_applyTheme()
 end
 
+function EZUI:SetTitle(titleText)
+    self.Title = titleText or ""
+    if self.TitleText then
+        self.TitleText.Text = self.Title
+    end
+end
+
+function EZUI:SetLogo(logo)
+    if not logo then return end
+    local logoStr = tostring(logo)
+    local isAsset = logoStr:find("rbxasset") or logoStr:find("http") or logoStr:find("://") or (tonumber(logo) ~= nil)
+    
+    if isAsset then
+        local assetId = (tonumber(logo) ~= nil) and ("rbxassetid://" .. tostring(logo)) or logoStr
+        self.EzLogoImage.Image = assetId
+        self.EzLogoImage.Visible = true
+        self.EzLogoText.Visible = false
+    else
+        self.EzLogoText.Text = logoStr
+        self.EzLogoText.Visible = true
+        self.EzLogoImage.Visible = false
+    end
+end
+
 function EZUI:SetBanner(bannerUrlOrAssetId)
     if not self.BannerImage then return end
     self.BannerImage.Image = bannerUrlOrAssetId or ""
@@ -230,7 +253,8 @@ function EZUI:_applyTheme()
     self.Window.BackgroundColor3 = theme.WindowBg
     self.Banner.BackgroundColor3 = theme.HeaderBg
     self.BannerFiller.BackgroundColor3 = theme.HeaderBg
-    self.EzLogo.TextColor3 = theme.AccentColor
+    self.EzLogoText.TextColor3 = theme.AccentColor
+    self.EzLogoImage.ImageColor3 = Color3.new(1, 1, 1)
     self.TitleText.TextColor3 = theme.AccentColor
     self.TabBar.BackgroundColor3 = theme.TabBarBg
     self.HighlightBox.BackgroundColor3 = theme.HighlightBg
@@ -304,24 +328,42 @@ function EZUI:_buildGui()
     bannerImgCorner.CornerRadius = UDim.new(0, 6)
     bannerImgCorner.Parent = bannerImage
 
-    local ezLogo = Instance.new("TextLabel")
-    ezLogo.Size = UDim2.fromOffset(56, 46)
-    ezLogo.Position = UDim2.fromOffset(16, 16)
-    ezLogo.BackgroundTransparency = 1
-    ezLogo.Text = self.LogoText
-    ezLogo.Font = Enum.Font.GothamBlack
-    ezLogo.TextSize = 36
-    ezLogo.TextColor3 = self.Theme.AccentColor
-    ezLogo.TextStrokeTransparency = 0.7 
-    ezLogo.ZIndex = 2
-    ezLogo.Parent = banner
-    self.EzLogo = ezLogo
+    -- Left Logo Image (Supports Asset ID / Image URL)
+    local ezLogoImg = Instance.new("ImageLabel")
+    ezLogoImg.Size = UDim2.fromOffset(40, 40)
+    ezLogoImg.Position = UDim2.fromOffset(16, 20)
+    ezLogoImg.BackgroundTransparency = 1
+    ezLogoImg.ScaleType = Enum.ScaleType.Fit
+    ezLogoImg.ZIndex = 2
+    ezLogoImg.Visible = false
+    ezLogoImg.Parent = banner
+    self.EzLogoImage = ezLogoImg
 
+    local ezLogoImgCorner = Instance.new("UICorner")
+    ezLogoImgCorner.CornerRadius = UDim.new(0, 6)
+    ezLogoImgCorner.Parent = ezLogoImg
+
+    -- Left Logo Text
+    local ezLogoText = Instance.new("TextLabel")
+    ezLogoText.Size = UDim2.fromOffset(60, 46)
+    ezLogoText.Position = UDim2.fromOffset(16, 16)
+    ezLogoText.BackgroundTransparency = 1
+    ezLogoText.Text = self.LogoText or "EZ"
+    ezLogoText.Font = Enum.Font.GothamBlack
+    ezLogoText.TextSize = 34
+    ezLogoText.TextColor3 = self.Theme.AccentColor
+    ezLogoText.TextStrokeTransparency = 0.7 
+    ezLogoText.ZIndex = 2
+    ezLogoText.Visible = true
+    ezLogoText.Parent = banner
+    self.EzLogoText = ezLogoText
+
+    -- Right Title Text
     local titleText = Instance.new("TextLabel")
     titleText.Size = UDim2.fromOffset(150, 30)
     titleText.Position = UDim2.new(1, -166, 0, 25)
     titleText.BackgroundTransparency = 1
-    titleText.Text = self.Title
+    titleText.Text = self.Title or "EZUI"
     titleText.Font = Enum.Font.GothamBlack
     titleText.TextSize = 24
     titleText.TextXAlignment = Enum.TextXAlignment.Right
@@ -512,12 +554,12 @@ function EZUI:AddSelector(tab, name, options, default, onChange)
     return item
 end
 
-function EZUI:AddBannerSelector(tab, name, options, defaultIndex, onChange)
+function EZUI:AddBannerSelector(tab, name, userOptions, defaultIndex, onChange)
     name = name or "Banner"
-    options = options or BANNER_PRESETS
+    userOptions = userOptions or {}
     defaultIndex = defaultIndex or 1
     
-    local item = self:AddSelector(tab, name, options, defaultIndex, function(valIndex, itemObj)
+    local item = self:AddSelector(tab, name, userOptions, defaultIndex, function(valIndex, itemObj)
         local selected = itemObj.options[valIndex]
         if selected then
             self:SetBanner(selected.id)
@@ -528,8 +570,8 @@ function EZUI:AddBannerSelector(tab, name, options, defaultIndex, onChange)
     end)
     item.isBanner = true
     
-    if options[defaultIndex] then
-        self:SetBanner(options[defaultIndex].id)
+    if userOptions[defaultIndex] then
+        self:SetBanner(userOptions[defaultIndex].id)
     end
     
     return item
