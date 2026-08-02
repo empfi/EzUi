@@ -3,7 +3,8 @@
     
     Features:
     - Fixed Left-Side Position (No Dragging)
-    - Full Theme & Accent Color Customization (Presets: Green, Purple, Blue, Red, Cyan, Amber, Dark)
+    - Full Theme & Accent Color Customization (Presets: Green, Purple, Blue, Red, Cyan, Dark)
+    - Built-in Native Banner Image System & Live Banner Preview Side Panel
     - Hold-to-Repeat Navigation & Slider adjustment
     - Non-intrusive input sinking (WASD movement & Mouse Look preserved)
     - Clean Separator & Sub-menu support
@@ -94,6 +95,12 @@ local PRESET_THEMES = {
     }
 }
 
+local BANNER_PRESETS = {
+    {name = "None", id = ""},
+    {name = "Scooby", id = "rbxthumb://type=Asset&id=76117265881255&w=420&h=420"},
+    {name = "Abstract", id = "rbxthumb://type=Asset&id=76802492834754&w=420&h=420"}
+}
+
 local ROW_HEIGHT = 28
 local MAX_VISIBLE = 9
 
@@ -112,6 +119,7 @@ end
 local EZUI = {}
 EZUI.__index = EZUI
 EZUI.Presets = PRESET_THEMES
+EZUI.BannerPresets = BANNER_PRESETS
 
 function EZUI.new(config)
     config = config or {}
@@ -147,6 +155,10 @@ function EZUI.new(config)
     
     self:_buildGui()
     self:_setupInputs()
+
+    if config.Banner then
+        self:SetBanner(config.Banner)
+    end
     
     return self
 end
@@ -163,6 +175,11 @@ end
 function EZUI:SetAccentColor(color3)
     self.Theme.AccentColor = color3
     self:_applyTheme()
+end
+
+function EZUI:SetBanner(bannerUrlOrAssetId)
+    if not self.BannerImage then return end
+    self.BannerImage.Image = bannerUrlOrAssetId or ""
 end
 
 function EZUI:_applyTheme()
@@ -310,7 +327,7 @@ function EZUI:_buildGui()
     innerScroll.Parent = bodyContainer
     self.InnerScroll = innerScroll
 
-    -- Highlight Selection (Fixed Left Position, No Vertical Accent Strip)
+    -- Highlight Selection
     local highlightBox = Instance.new("Frame")
     highlightBox.Size = UDim2.new(1, 0, 0, ROW_HEIGHT)
     highlightBox.Position = UDim2.new(0, 0, 0, 0)
@@ -363,7 +380,7 @@ function EZUI:_buildGui()
     footerCounter.Parent = footerBar
     self.FooterCounter = footerCounter
 
-    -- Side Panel (Preview Window)
+    -- Side Panel (Live Banner Preview Window)
     local sidePanel = Instance.new("Frame")
     sidePanel.Size = UDim2.fromOffset(180, 110)
     sidePanel.Position = UDim2.new(1, 10, 0, 0)
@@ -452,6 +469,29 @@ function EZUI:AddSelector(tab, name, options, default, onChange)
     return item
 end
 
+function EZUI:AddBannerSelector(tab, name, options, defaultIndex, onChange)
+    name = name or "Banner"
+    options = options or BANNER_PRESETS
+    defaultIndex = defaultIndex or 1
+    
+    local item = self:AddSelector(tab, name, options, defaultIndex, function(valIndex, itemObj)
+        local selected = itemObj.options[valIndex]
+        if selected then
+            self:SetBanner(selected.id)
+        end
+        if onChange then
+            onChange(valIndex, selected, itemObj)
+        end
+    end)
+    item.isBanner = true
+    
+    if options[defaultIndex] then
+        self:SetBanner(options[defaultIndex].id)
+    end
+    
+    return item
+end
+
 function EZUI:AddButton(tab, name, onClick)
     local item = { type = "button", name = name, onClick = onClick }
     table.insert(tab.items, item)
@@ -490,7 +530,7 @@ end
 function EZUI:_updateSidePanel()
     local items = self:GetItems()
     local item = items[self.SelectedIndex]
-    if item and item.name == "Banner" and item.options then
+    if item and (item.isBanner or item.name == "Banner") and item.options then
         self.SidePanel.Visible = true
         local opt = item.options[item.value]
         if opt and opt.id ~= "" then
@@ -718,7 +758,7 @@ function EZUI:_buildTabContent()
         end
     end
 
-    self.InnerScroll.Position = UDim2.new(0, 15, 0, -self.ScrollOffset * ROW_HEIGHT)
+    self.InnerScroll.Position = UDim2.new(0, 0, 0, -self.ScrollOffset * ROW_HEIGHT)
     self:_updateHighlightAndScroll()
 end
 
