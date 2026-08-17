@@ -1,34 +1,24 @@
---[[
-    EZUI — Premium Minimalist Roblox UI Library
-    
-    Features:
-    - Fixed Left-Side Position (No Dragging)
-    - Full Theme & Accent Color Customization (Presets: Green, Purple, Blue, Red, Cyan, Dark)
-    - Customizable Header Logo (Image ID or Text) & Script Title
-    - User-Defined Banner Image Support & Live Side-Panel Preview
-    - Hold-to-Repeat Navigation & Slider adjustment
-    - Non-intrusive input sinking (WASD movement & Mouse Look preserved)
-    - Automatic Re-execution Teardown & Cleanup
-]]
+-- EZUI is a small Roblox UI library for tabs, sliders, toggles, selectors, and notifications.
 
 local Players              = game:GetService("Players")
 local UserInputService     = game:GetService("UserInputService")
 local ContextActionService = game:GetService("ContextActionService")
 local TweenService         = game:GetService("TweenService")
+local HttpService          = game:GetService("HttpService")
 local CoreGui              = game:GetService("CoreGui")
+local RunService           = game:GetService("RunService")
 local LocalPlayer          = Players.LocalPlayer
 
-----------------------------------------------------------------
--- DEFAULT THEMES & PRESETS
-----------------------------------------------------------------
+-- Theme presets
 local PRESET_THEMES = {
     Green = {
         WindowBg       = Color3.fromRGB(15, 15, 15),
         HeaderBg       = Color3.fromRGB(18, 18, 18),
+        SubHeaderBg    = Color3.fromRGB(10, 10, 10),
         TabBarBg       = Color3.fromRGB(18, 18, 18),
         HighlightBg    = Color3.fromRGB(24, 58, 31),
         TextWhite      = Color3.fromRGB(255, 255, 255),
-        TextGray       = Color3.fromRGB(150, 150, 150),
+        TextGray       = Color3.fromRGB(235, 240, 250),
         AccentColor    = Color3.fromRGB(46, 180, 74),
         ToggleOff      = Color3.fromRGB(50, 50, 50),
         SliderTrack    = Color3.fromRGB(60, 60, 60),
@@ -37,10 +27,11 @@ local PRESET_THEMES = {
     Purple = {
         WindowBg       = Color3.fromRGB(15, 15, 18),
         HeaderBg       = Color3.fromRGB(18, 18, 22),
+        SubHeaderBg    = Color3.fromRGB(10, 10, 14),
         TabBarBg       = Color3.fromRGB(18, 18, 22),
         HighlightBg    = Color3.fromRGB(45, 25, 65),
         TextWhite      = Color3.fromRGB(255, 255, 255),
-        TextGray       = Color3.fromRGB(150, 150, 150),
+        TextGray       = Color3.fromRGB(235, 240, 250),
         AccentColor    = Color3.fromRGB(147, 51, 234),
         ToggleOff      = Color3.fromRGB(50, 50, 50),
         SliderTrack    = Color3.fromRGB(60, 60, 60),
@@ -49,10 +40,11 @@ local PRESET_THEMES = {
     Blue = {
         WindowBg       = Color3.fromRGB(14, 16, 20),
         HeaderBg       = Color3.fromRGB(18, 20, 26),
+        SubHeaderBg    = Color3.fromRGB(10, 12, 16),
         TabBarBg       = Color3.fromRGB(18, 20, 26),
         HighlightBg    = Color3.fromRGB(20, 45, 75),
         TextWhite      = Color3.fromRGB(255, 255, 255),
-        TextGray       = Color3.fromRGB(150, 150, 150),
+        TextGray       = Color3.fromRGB(235, 240, 250),
         AccentColor    = Color3.fromRGB(37, 99, 235),
         ToggleOff      = Color3.fromRGB(50, 50, 50),
         SliderTrack    = Color3.fromRGB(60, 60, 60),
@@ -61,10 +53,11 @@ local PRESET_THEMES = {
     Red = {
         WindowBg       = Color3.fromRGB(18, 14, 14),
         HeaderBg       = Color3.fromRGB(22, 18, 18),
+        SubHeaderBg    = Color3.fromRGB(14, 10, 10),
         TabBarBg       = Color3.fromRGB(22, 18, 18),
         HighlightBg    = Color3.fromRGB(65, 25, 25),
         TextWhite      = Color3.fromRGB(255, 255, 255),
-        TextGray       = Color3.fromRGB(150, 150, 150),
+        TextGray       = Color3.fromRGB(235, 240, 250),
         AccentColor    = Color3.fromRGB(225, 29, 72),
         ToggleOff      = Color3.fromRGB(50, 50, 50),
         SliderTrack    = Color3.fromRGB(60, 60, 60),
@@ -73,10 +66,11 @@ local PRESET_THEMES = {
     Cyan = {
         WindowBg       = Color3.fromRGB(14, 18, 20),
         HeaderBg       = Color3.fromRGB(18, 22, 24),
+        SubHeaderBg    = Color3.fromRGB(10, 14, 16),
         TabBarBg       = Color3.fromRGB(18, 22, 24),
         HighlightBg    = Color3.fromRGB(20, 60, 70),
         TextWhite      = Color3.fromRGB(255, 255, 255),
-        TextGray       = Color3.fromRGB(150, 150, 150),
+        TextGray       = Color3.fromRGB(235, 240, 250),
         AccentColor    = Color3.fromRGB(6, 182, 212),
         ToggleOff      = Color3.fromRGB(50, 50, 50),
         SliderTrack    = Color3.fromRGB(60, 60, 60),
@@ -85,10 +79,11 @@ local PRESET_THEMES = {
     Dark = {
         WindowBg       = Color3.fromRGB(12, 12, 12),
         HeaderBg       = Color3.fromRGB(16, 16, 16),
+        SubHeaderBg    = Color3.fromRGB(8, 8, 8),
         TabBarBg       = Color3.fromRGB(16, 16, 16),
         HighlightBg    = Color3.fromRGB(35, 35, 35),
         TextWhite      = Color3.fromRGB(255, 255, 255),
-        TextGray       = Color3.fromRGB(150, 150, 150),
+        TextGray       = Color3.fromRGB(235, 240, 250),
         AccentColor    = Color3.fromRGB(200, 200, 200),
         ToggleOff      = Color3.fromRGB(50, 50, 50),
         SliderTrack    = Color3.fromRGB(60, 60, 60),
@@ -96,16 +91,407 @@ local PRESET_THEMES = {
     }
 }
 
-local ROW_HEIGHT = 28
-local MAX_VISIBLE = 9
+local ROW_HEIGHT = 30
+local MAX_VISIBLE = 8
 
-----------------------------------------------------------------
--- UTILITIES
-----------------------------------------------------------------
+-- Utility helpers
 local function tween(obj, time, props)
     local t = TweenService:Create(obj, TweenInfo.new(time, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), props)
     t:Play()
     return t
+end
+
+local FONT_ALIAS = {
+    inter          = "Inter",
+    interbold      = "InterBold",
+    poppins        = "Poppins",
+    montserrat     = "Montserrat",
+    firasans       = "FiraSans",
+    gotham         = "Gotham",
+    gothammedium   = "GothamMedium",
+    gothambold     = "GothamBold",
+    roboto         = "Roboto",
+    robotomedium   = "Roboto",
+    sourcesans     = "SourceSans",
+    sourcesansbold = "SourceSansBold",
+    fredokaone     = "FredokaOne",
+    michroma       = "Michroma",
+    josefinsans    = "JosefinSans",
+    arcade         = "Arcade",
+    bodoni         = "Bodoni",
+    fantasy        = "Fantasy",
+    jura           = "Jura",
+    nunito         = "Nunito",
+    sarpanch       = "Sarpanch",
+    ubuntu         = "Ubuntu",
+    buildersans    = "BuilderSans",
+    buildersansbold= "BuilderSansBold",
+    code           = "Code",
+    inconsolata    = "Inconsolata"
+}
+
+local function getEnumFontByName(nameStr)
+    if not nameStr then return nil end
+    local ok, result = pcall(function()
+        return Enum.Font[nameStr]
+    end)
+    if ok and result then return result end
+    return nil
+end
+
+local function parseFont(fontVal)
+    if typeof(fontVal) == "EnumItem" then
+        return fontVal
+    end
+    
+    if type(fontVal) == "string" then
+        local direct = getEnumFontByName(fontVal)
+        if direct then return direct end
+
+        local lower = fontVal:lower()
+        if FONT_ALIAS[lower] then
+            local aliasResult = getEnumFontByName(FONT_ALIAS[lower])
+            if aliasResult then return aliasResult end
+        end
+
+        local found = nil
+        pcall(function()
+            for _, item in ipairs(Enum.Font:GetEnumItems()) do
+                local itemName = item.Name:lower()
+                if itemName == lower or itemName:find(lower) then
+                    found = item
+                    break
+                end
+            end
+        end)
+        if found then return found end
+    end
+
+    return getEnumFontByName("GothamMedium") or Enum.Font:GetEnumItems()[1]
+end
+
+-- Clean & Verified Standalone Icon Set (Lucide Decals & Roblox Engine Textures)
+-- Supports lookup by PascalCase (EZUI.Icons.Home), lowercase ("home"), or prefix ("lucide-home")
+local BUILTIN_ICONS = {
+    -- ── Core Navigation & Layout ────────────────────────────────────
+    Home            = "rbxassetid://10723407389",      -- Verified Lucide Home 🏠
+    Menu            = "rbxassetid://10709796014",      -- Verified Lucide Menu ☰
+    Sidebar         = "rbxassetid://10709796440",
+    LayoutGrid      = "rbxassetid://10709796014",
+
+    -- ── User / Social ────────────────────────────────────────────────
+    User            = "rbxassetid://10747373176",      -- Verified Lucide User 👤
+    Users           = "rbxassetid://10723434557",      -- Verified Lucide Users 👥
+    Crown           = "rbxassetid://10709788484",      -- Verified Lucide Crown 👑
+    Trophy          = "rbxassetid://10709812739",
+    Star            = "rbxassetid://10709808847",      -- Verified Lucide Star ⭐
+    Medal           = "rbxassetid://10709769406",
+
+    -- ── System & Settings ────────────────────────────────────────────
+    Settings        = "rbxassetid://10734950309",      -- Verified Lucide Settings Gear ⚙️
+    Wrench          = "rbxassetid://10709816353",      -- Verified Lucide Wrench 🔧
+    Sliders         = "rbxassetid://10734963400",      -- Verified Lucide Sliders 🎚️
+    Power           = "rbxassetid://10734930466",      -- Verified Lucide Power Button ⏻
+    Terminal        = "rbxassetid://10709810488",
+    Font            = "rbxassetid://10747364761",      -- Verified Lucide Type/Font 'A' 🔤
+
+    -- ── Security & Auth ──────────────────────────────────────────────
+    Shield          = "rbxassetid://10709806967",      -- Verified Lucide Shield 🛡️
+    Lock            = "rbxassetid://10709797280",      -- Verified Lucide Lock 🔒
+    Unlock          = "rbxassetid://10709813426",
+    Eye             = "rbxassetid://10723346959",      -- Verified Lucide Eye 👁️
+    Key             = "rbxassetid://10709795774",
+
+    -- ── Notifications & Status ───────────────────────────────────────
+    Bell            = "rbxassetid://10709775704",      -- Verified Lucide Bell 🔔
+    Info            = "rbxassetid://10709752996",      -- Verified Lucide Info Circle ℹ️
+    AlertTriangle   = "rbxassetid://10709753149",      -- Verified Lucide Alert Triangle ⚠️
+    Warning         = "rbxassetid://10709753149",      -- Verified Lucide Alert Triangle ⚠️
+    Check           = "rbxassetid://10709790644",      -- Verified Lucide Checkmark ✔️
+    CheckCircle     = "rbxassetid://10709790644",
+    Cross           = "rbxassetid://10747384394",      -- Verified Lucide Close X ❌
+    X               = "rbxassetid://10747384394",
+    XCircle         = "rbxassetid://10747384394",
+    Error           = "rbxassetid://10747384394",
+
+    -- ── Files & Media ────────────────────────────────────────────────
+    Folder          = "rbxassetid://10709791763",      -- Verified Lucide Folder 📁
+    File            = "rbxassetid://10709790948",
+    Image           = "rbxassetid://10723415040",      -- Verified Lucide Image 🖼️
+    Palette         = "rbxassetid://10734910430",      -- Verified Lucide Palette 🎨
+    
+    -- ── Actions & Controls ───────────────────────────────────────────
+    Search          = "rbxassetid://10709805646",      -- Verified Lucide Search 🔍
+    Pencil          = "rbxassetid://10709800778",
+    Trash           = "rbxassetid://10747384394",
+    Plus            = "rbxassetid://10709790644",
+    Minus           = "rbxassetid://10747384394",
+
+    -- ── Gaming & Aesthetics ──────────────────────────────────────────
+    Speed           = "rbxassetid://10709807897",      -- Verified Lucide Speed ⚡
+    Sword           = "rbxassetid://10709806440",
+    Heart           = "rbxassetid://10709794176",      -- Verified Lucide Heart ❤️
+    Car             = "rbxassetid://10709783137",
+}
+
+-- Comprehensive Lucide Icon Dataset (from https://lucide.dev/icons/)
+local LUCIDE_EXTENDED = {
+    ["accessibility"] = "rbxassetid://10709751939",
+    ["activity"] = "rbxassetid://10709752035",
+    ["air-vent"] = "rbxassetid://10709752131",
+    ["airplay"] = "rbxassetid://10709752254",
+    ["alarm-check"] = "rbxassetid://10709752405",
+    ["alarm-clock"] = "rbxassetid://10709752630",
+    ["alarm-clock-off"] = "rbxassetid://10709752508",
+    ["alarm-minus"] = "rbxassetid://10709752732",
+    ["alarm-plus"] = "rbxassetid://10709752825",
+    ["album"] = "rbxassetid://10709752906",
+    ["alert-circle"] = "rbxassetid://10709752996",
+    ["alert-octagon"] = "rbxassetid://10709753064",
+    ["alert-triangle"] = "rbxassetid://7733658504",
+    ["align-center"] = "rbxassetid://10709753570",
+    ["align-left"] = "rbxassetid://10709759764",
+    ["align-right"] = "rbxassetid://10709759895",
+    ["anchor"] = "rbxassetid://10709761530",
+    ["aperture"] = "rbxassetid://10709761813",
+    ["apple"] = "rbxassetid://10709761889",
+    ["archive"] = "rbxassetid://10709762233",
+    ["arrow-big-down"] = "rbxassetid://10747796644",
+    ["arrow-big-left"] = "rbxassetid://10709762574",
+    ["arrow-big-right"] = "rbxassetid://10709762727",
+    ["arrow-big-up"] = "rbxassetid://10709762879",
+    ["arrow-down"] = "rbxassetid://10709767827",
+    ["arrow-left"] = "rbxassetid://10709768114",
+    ["arrow-right"] = "rbxassetid://10709768347",
+    ["arrow-up"] = "rbxassetid://10709768939",
+    ["at-sign"] = "rbxassetid://10709769286",
+    ["award"] = "rbxassetid://10709769406",
+    ["axe"] = "rbxassetid://10709769508",
+    ["backpack"] = "rbxassetid://10709769841",
+    ["badge-check"] = "rbxassetid://10709769406",
+    ["banana"] = "rbxassetid://10709770005",
+    ["banknote"] = "rbxassetid://10709770178",
+    ["bar-chart"] = "rbxassetid://10709773755",
+    ["battery"] = "rbxassetid://10709774640",
+    ["battery-charging"] = "rbxassetid://10709774068",
+    ["beaker"] = "rbxassetid://10709774756",
+    ["bell"] = "rbxassetid://7733674670",
+    ["bell-off"] = "rbxassetid://10709775176",
+    ["bike"] = "rbxassetid://10709775367",
+    ["binary"] = "rbxassetid://10709775463",
+    ["bookmark"] = "rbxassetid://10709775986",
+    ["box"] = "rbxassetid://10709776260",
+    ["bug"] = "rbxassetid://10709776735",
+    ["building"] = "rbxassetid://10709776856",
+    ["calculator"] = "rbxassetid://10709777114",
+    ["calendar"] = "rbxassetid://10709777620",
+    ["camera"] = "rbxassetid://10709777953",
+    ["car"] = "rbxassetid://7733715400",
+    ["check"] = "rbxasset://textures/ui/icon_checkmark.png",
+    ["check-circle"] = "rbxasset://textures/ui/icon_checkmark.png",
+    ["chevron-down"] = "rbxassetid://10709782230",
+    ["chevron-left"] = "rbxassetid://10709782358",
+    ["chevron-right"] = "rbxassetid://10709782519",
+    ["chevron-up"] = "rbxassetid://10709782758",
+    ["circle"] = "rbxassetid://10709783511",
+    ["clipboard"] = "rbxassetid://10709784384",
+    ["clock"] = "rbxassetid://10709784777",
+    ["cloud"] = "rbxassetid://10709785888",
+    ["code"] = "rbxassetid://10709786480",
+    ["coins"] = "rbxassetid://10709786930",
+    ["compass"] = "rbxassetid://10709787262",
+    ["cpu"] = "rbxassetid://10709787720",
+    ["credit-card"] = "rbxassetid://10709787948",
+    ["crown"] = "rbxassetid://7733765398",
+    ["database"] = "rbxassetid://10709788484",
+    ["disc"] = "rbxassetid://10709789329",
+    ["download"] = "rbxassetid://10709789785",
+    ["eye"] = "rbxassetid://7733765398",
+    ["eye-off"] = "rbxassetid://10709790435",
+    ["file"] = "rbxassetid://10709790948",
+    ["file-text"] = "rbxassetid://10709791437",
+    ["film"] = "rbxassetid://10709791583",
+    ["filter"] = "rbxassetid://10709791763",
+    ["flame"] = "rbxassetid://10709791983",
+    ["folder"] = "rbxassetid://7733799915",
+    ["font"] = "rbxassetid://7734056608",
+    ["gamepad"] = "rbxassetid://10709792671",
+    ["gift"] = "rbxassetid://10709792984",
+    ["globe"] = "rbxassetid://10709793479",
+    ["hash"] = "rbxassetid://10709794017",
+    ["headphones"] = "rbxassetid://10709794176",
+    ["heart"] = "rbxassetid://7733954760",
+    ["home"] = "rbxassetid://7733960981",
+    ["image"] = "rbxassetid://7733964126",
+    ["info"] = "rbxassetid://7733964808",
+    ["key"] = "rbxassetid://10709795774",
+    ["layers"] = "rbxassetid://10709796014",
+    ["layout"] = "rbxassetid://10709796440",
+    ["life-buoy"] = "rbxassetid://10709796683",
+    ["link"] = "rbxassetid://10709796987",
+    ["lock"] = "rbxassetid://10709797280",
+    ["mail"] = "rbxassetid://10709797686",
+    ["map"] = "rbxassetid://10709798085",
+    ["message-square"] = "rbxassetid://10709798486",
+    ["mic"] = "rbxassetid://10709798939",
+    ["moon"] = "rbxassetid://10709799298",
+    ["music"] = "rbxassetid://10709799637",
+    ["navigation"] = "rbxassetid://10709799962",
+    ["palette"] = "rbxassetid://7733978098",
+    ["paperclip"] = "rbxassetid://10709800332",
+    ["pencil"] = "rbxassetid://10709800778",
+    ["phone"] = "rbxassetid://10709801067",
+    ["pie-chart"] = "rbxassetid://10709801452",
+    ["pin"] = "rbxassetid://10709801691",
+    ["play"] = "rbxassetid://10709802085",
+    ["plus"] = "rbxasset://textures/ui/icon_checkmark.png",
+    ["power"] = "rbxassetid://7733987483",
+    ["printer"] = "rbxassetid://10709802422",
+    ["qr-code"] = "rbxassetid://10709802778",
+    ["radio"] = "rbxassetid://10709803130",
+    ["refresh-cw"] = "rbxassetid://10709803623",
+    ["rocket"] = "rbxassetid://10709804077",
+    ["rotate-cw"] = "rbxassetid://10709804364",
+    ["rss"] = "rbxassetid://10709804675",
+    ["save"] = "rbxassetid://10709804987",
+    ["scissors"] = "rbxassetid://10709805260",
+    ["search"] = "rbxassetid://7734052925",
+    ["send"] = "rbxassetid://10709805646",
+    ["server"] = "rbxassetid://10709805988",
+    ["settings"] = "rbxassetid://7734053495",
+    ["share"] = "rbxassetid://10709806440",
+    ["shield"] = "rbxassetid://7733987483",
+    ["shopping-cart"] = "rbxassetid://10709806967",
+    ["shuffle"] = "rbxassetid://10709807314",
+    ["skull"] = "rbxassetid://10709807572",
+    ["sliders"] = "rbxassetid://10734963400",
+    ["smartphone"] = "rbxassetid://10709807897",
+    ["smile"] = "rbxassetid://10709808223",
+    ["sparkles"] = "rbxassetid://10709808544",
+    ["speaker"] = "rbxassetid://10709808847",
+    ["speed"] = "rbxassetid://10723387563",
+    ["star"] = "rbxassetid://7734056608",
+    ["sun"] = "rbxassetid://10709809310",
+    ["sword"] = "rbxassetid://7734060384",
+    ["swords"] = "rbxassetid://7734060384",
+    ["tag"] = "rbxassetid://10709809772",
+    ["target"] = "rbxassetid://10709810143",
+    ["terminal"] = "rbxassetid://10709810488",
+    ["thermometer"] = "rbxassetid://10709810817",
+    ["thumbs-down"] = "rbxassetid://10709811130",
+    ["thumbs-up"] = "rbxassetid://10709811440",
+    ["ticket"] = "rbxassetid://10709811770",
+    ["timer"] = "rbxassetid://10709812130",
+    ["trash"] = "rbxassetid://10747384394",
+    ["trophy"] = "rbxassetid://7734056608",
+    ["tv"] = "rbxassetid://10709812739",
+    ["twitter"] = "rbxassetid://10709813083",
+    ["unlock"] = "rbxassetid://10709813426",
+    ["user"] = "rbxassetid://10747373176",
+    ["upload"] = "rbxassetid://10747373176",
+    ["users"] = "rbxassetid://10723434557",
+    ["preview"] = "rbxassetid://10723346959",
+    ["eye"] = "rbxassetid://10723346959",
+    ["video"] = "rbxassetid://10709814467",
+    ["volume-2"] = "rbxassetid://10709814890",
+    ["wallet"] = "rbxassetid://10709815340",
+    ["wand"] = "rbxassetid://10709815668",
+    ["warning"] = "rbxassetid://10709753149",
+    ["watch"] = "rbxassetid://10709815998",
+    ["wifi"] = "rbxassetid://10709816353",
+    ["wrench"] = "rbxassetid://7734098254",
+    ["x"] = "rbxassetid://10747384394",
+    ["x-circle"] = "rbxassetid://10747384394",
+    ["zap"] = "rbxassetid://7734058803"
+}
+
+-- Normalized Lucide & Custom Icon Resolver
+-- Resolves any icon format from https://lucide.dev/icons/
+-- Examples: EZUI.Icons.Home, "home", "lucide-home", "user_check", "user-check", "UserCheck"
+local function _resolveIconName(str)
+    if not str then return nil end
+    local cleanStr = tostring(str):match("^lucide%-(.+)$") or tostring(str)
+    local lower = cleanStr:lower():gsub("_", "-"):gsub("%s+", "-")
+
+    for key, assetId in pairs(BUILTIN_ICONS) do
+        local keyLower = key:lower():gsub("_", "-"):gsub("%s+", "-")
+        if keyLower == lower then
+            return assetId
+        end
+    end
+
+    if LUCIDE_EXTENDED[lower] then
+        return LUCIDE_EXTENDED[lower]
+    end
+
+    return nil
+end
+
+local function formatAssetId(icon)
+    if not icon or icon == "" or icon == 0 then return "" end
+    local str = tostring(icon)
+
+    -- Direct asset path or URL ("rbxasset://...", "rbxthumb://...", "http://...", "https://...")
+    if str:find("rbxasset://") or str:find("rbxthumb://") or str:find("http://") or str:find("https://") then
+        return str
+    end
+
+    -- PascalCase or exact BUILTIN match
+    if BUILTIN_ICONS[str] then
+        return BUILTIN_ICONS[str]
+    end
+
+    -- Case-insensitive & normalized lucide- lookup
+    local resolved = _resolveIconName(str)
+    if resolved then return resolved end
+
+    -- Extract numeric Roblox asset ID if present
+    local digits = str:match("%d+")
+    if digits and #digits >= 5 then
+        return "rbxassetid://" .. digits
+    end
+
+    return str
+end
+
+local function getCustomIconAsset(assetIdOrUrl)
+    if not assetIdOrUrl or assetIdOrUrl == "" then return "" end
+    local str = tostring(assetIdOrUrl)
+    if str:find("rbxasset://") or str:find("rbxthumb://") then return str end
+
+    -- Sirius / Rayfield Gen2 getcustomasset local cache check
+    local digits = str:match("%d+")
+    if digits and getfenv and type(getfenv().getcustomasset) == "function" and typeof(readfile) == "function" then
+        local filePath = "EZUI_Assets/" .. digits .. ".png"
+        if isfile and isfile(filePath) then
+            local ok, asset = pcall(getfenv().getcustomasset, filePath)
+            if ok and asset then return asset end
+        end
+    end
+
+    return str
+end
+
+local function setIconImage(imgLabel, icon)
+    if not imgLabel or not icon or icon == "" then
+        if imgLabel then
+            imgLabel.Image = ""
+            imgLabel.ImageRectOffset = Vector2.new(0, 0)
+            imgLabel.ImageRectSize = Vector2.new(0, 0)
+        end
+        return
+    end
+
+    local res = formatAssetId(icon)
+    if type(res) == "table" then
+        imgLabel.Image = getCustomIconAsset(res.Url or res.Id or "")
+        imgLabel.ImageRectOffset = res.ImageRectOffset or Vector2.new(0, 0)
+        imgLabel.ImageRectSize = res.ImageRectSize or Vector2.new(0, 0)
+    else
+        imgLabel.Image = getCustomIconAsset(res)
+        imgLabel.ImageRectOffset = Vector2.new(0, 0)
+        imgLabel.ImageRectSize = Vector2.new(0, 0)
+    end
 end
 
 local function cleanupExistingUI()
@@ -130,29 +516,42 @@ local function cleanupExistingUI()
 end
 
 ----------------------------------------------------------------
--- EZUI LIBRARY CLASS
+-- Main UI class
 ----------------------------------------------------------------
 local EZUI = {}
 EZUI.__index = EZUI
 EZUI.Presets = PRESET_THEMES
+EZUI.Icons = BUILTIN_ICONS
 
 function EZUI.new(config)
     cleanupExistingUI()
     config = config or {}
     local self = setmetatable({}, EZUI)
+    self.UserConfig = config
     
     self.Title = config.Title or "EZUI"
     self.LogoText = config.LogoText or "EZ"
     self.FooterText = config.FooterText or "EZUI Library | discord.gg/ezui"
     self.ToggleKey = config.ToggleKey or Enum.KeyCode.RightShift
     
-    -- Theme Setup
+    local defaultFontName = config.Font or "Montserrat"
+    self.FontName = typeof(defaultFontName) == "EnumItem" and defaultFontName.Name or tostring(defaultFontName)
+    self.Font = parseFont(config.Font or Enum.Font.Montserrat)
+    
+    self.NotifyPosition = config.NotifyPosition or "TopRight"
+    self.NotifyDuration = tonumber(config.NotifyDuration) or 4
+    
+    self.AutoSave = config.AutoSave ~= false
+    self.ConfigFileName = config.ConfigFileName or config.ConfigFile or ((self.Title or "EZUI") .. "_themeconfig.json")
+    
     if type(config.Theme) == "string" and PRESET_THEMES[config.Theme] then
         self.Theme = table.clone(PRESET_THEMES[config.Theme])
+        self.CurrentThemeName = config.Theme
     elseif type(config.Theme) == "table" then
         self.Theme = table.clone(config.Theme)
     else
-        self.Theme = table.clone(PRESET_THEMES.Green)
+        self.Theme = table.clone(PRESET_THEMES.Purple)
+        self.CurrentThemeName = "Purple"
     end
 
     if config.AccentColor then
@@ -167,11 +566,25 @@ function EZUI.new(config)
     self.MenuVisible = true
     self.RowInstances = {}
     self.Connections = {}
+    self.OnUninjectCallbacks = {}
     self.ActiveHeldKey = nil
     self.HoldThread = nil
     
     self:_buildGui()
     self:_setupInputs()
+
+    -- Auto-load saved themeconfig if available
+    if config.AutoLoad ~= false then
+        pcall(function() self:LoadConfig() end)
+    end
+
+    if config.Title then
+        self:SetTitle(config.Title)
+    end
+
+    if config.FooterText then
+        self:SetFooterText(config.FooterText)
+    end
 
     if config.Logo or config.LogoImage or config.LogoText then
         self:SetLogo(config.Logo or config.LogoImage or config.LogoText)
@@ -179,6 +592,28 @@ function EZUI.new(config)
 
     if config.Banner then
         self:SetBanner(config.Banner)
+    end
+
+    if config.Width or config.Height or config.Size or config.WindowSize then
+        local w = config.Width or (config.Size and typeof(config.Size) == "UDim2" and config.Size.X.Offset) or 320
+        local h = config.Height or (config.Size and typeof(config.Size) == "UDim2" and config.Size.Y.Offset) or 376
+        self:SetWindowSize(w, h)
+    end
+    
+    if config.Position or config.WindowPosition then
+        self:SetWindowPosition(config.Position or config.WindowPosition)
+    end
+    if config.CornerRadius or config.Shape then
+        self:SetCornerRadius(config.CornerRadius or config.Shape)
+    end
+    if config.PreviewPosition then
+        self:SetPreviewPosition(config.PreviewPosition)
+    end
+    if config.PreviewLayout then
+        self:SetPreviewLayout(config.PreviewLayout)
+    end
+    if config.PreviewShape then
+        self:SetPreviewShape(config.PreviewShape)
     end
     
     if getgenv then
@@ -188,30 +623,406 @@ function EZUI.new(config)
     return self
 end
 
-function EZUI:Destroy()
+function EZUI:OnUninject(callback)
+    if type(callback) == "function" then
+        table.insert(self.OnUninjectCallbacks, callback)
+    end
+end
+
+function EZUI:Uninject()
     self:_stopKeyHold()
     self:_unbindKeys()
+    
     if self.Connections then
         for _, conn in ipairs(self.Connections) do
             pcall(function() conn:Disconnect() end)
         end
         table.clear(self.Connections)
     end
+
+    if self.OnUninjectCallbacks then
+        for _, cb in ipairs(self.OnUninjectCallbacks) do
+            pcall(cb)
+        end
+        table.clear(self.OnUninjectCallbacks)
+    end
+
+    pcall(function()
+        local char = LocalPlayer and LocalPlayer.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.WalkSpeed = 16
+            hum.JumpPower = 50
+        end
+    end)
+
     if self.Gui then
         pcall(function() self.Gui:Destroy() end)
     end
+
     if getgenv and getgenv().EZUI_ActiveInstance == self then
         getgenv().EZUI_ActiveInstance = nil
     end
 end
 
-function EZUI:SetTheme(themePresetOrTable)
+function EZUI:Destroy()
+    self:Uninject()
+end
+
+local NOTIFY_CONTAINERS = {}
+
+local function getNotifyContainer(posName)
+    posName = posName or "TopRight"
+    if NOTIFY_CONTAINERS[posName] and NOTIFY_CONTAINERS[posName].Parent then
+        return NOTIFY_CONTAINERS[posName]
+    end
+
+    local gui = CoreGui:FindFirstChild("EZUI_Notifications")
+    if not gui then
+        gui = Instance.new("ScreenGui")
+        gui.Name = "EZUI_Notifications"
+        gui.ResetOnSpawn = false
+        gui.IgnoreGuiInset = true
+        gui.DisplayOrder = 1000
+        pcall(function() gui.Parent = CoreGui end)
+        if not gui.Parent then gui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
+    end
+
+    local container = Instance.new("Frame")
+    container.Name = posName .. "Container"
+    container.Size = UDim2.fromOffset(260, 500)
+    container.BackgroundTransparency = 1
+    container.BorderSizePixel = 0
+    container.Parent = gui
+
+    local layout = Instance.new("UIListLayout")
+    layout.Padding = UDim.new(0, 8)
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Parent = container
+
+    if posName == "TopRight" then
+        container.AnchorPoint = Vector2.new(1, 0)
+        container.Position = UDim2.new(1, -20, 0, 20)
+        layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+        layout.VerticalAlignment = Enum.VerticalAlignment.Top
+    elseif posName == "TopLeft" then
+        container.AnchorPoint = Vector2.new(0, 0)
+        container.Position = UDim2.new(0, 20, 0, 20)
+        layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+        layout.VerticalAlignment = Enum.VerticalAlignment.Top
+    elseif posName == "BottomRight" then
+        container.AnchorPoint = Vector2.new(1, 1)
+        container.Position = UDim2.new(1, -20, 1, -20)
+        layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+        layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+    elseif posName == "BottomLeft" then
+        container.AnchorPoint = Vector2.new(0, 1)
+        container.Position = UDim2.new(0, 20, 1, -20)
+        layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+        layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+    end
+
+    NOTIFY_CONTAINERS[posName] = container
+    return container
+end
+
+function EZUI:SetNotifyPosition(posName, skipSave)
+    self.NotifyPosition = posName or "TopRight"
+    if not skipSave then self:SaveConfig() end
+end
+
+function EZUI:SetNotifyDuration(seconds)
+    self.NotifyDuration = tonumber(seconds) or 4
+end
+
+function EZUI:Notify(data)
+    if type(data) == "string" then
+        data = { Text = data, Type = "Info" }
+    end
+    data = data or {}
+
+    local state = data.Type or data.State or "Info"
+    local titleText = data.Title or data.Header or state
+    local bodyText = data.Text or data.Content or data.Message or ""
+    local duration = tonumber(data.Duration or data.Time or self.NotifyDuration) or 4
+    local posName = data.Position or self.NotifyPosition or "TopRight"
+    local font = self.Font or Enum.Font.GothamMedium
+
+    local stateColors = {
+        Info    = Color3.fromRGB(59, 130, 246),
+        Warning = Color3.fromRGB(245, 158, 11),
+        Error   = Color3.fromRGB(239, 68, 68)
+    }
+
+    stateColors.info = stateColors.Info
+    stateColors.warning = stateColors.Warning
+    stateColors.error = stateColors.Error
+
+    local accentColor = stateColors[state] or stateColors.Info
+
+    local defaultIcons = {
+        Info    = BUILTIN_ICONS.Info,
+        Warning = BUILTIN_ICONS.Warning,
+        Error   = BUILTIN_ICONS.Error
+    }
+    defaultIcons.info = defaultIcons.Info
+    defaultIcons.warning = defaultIcons.Warning
+    defaultIcons.error = defaultIcons.Error
+
+    local iconId = data.Icon or defaultIcons[state] or BUILTIN_ICONS.Info
+
+    local container = getNotifyContainer(posName)
+
+    local card = Instance.new("Frame")
+    card.Size = UDim2.fromOffset(250, 52)
+    card.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    card.BackgroundTransparency = 1
+    card.BorderSizePixel = 0
+    card.ClipsDescendants = true
+    card.Parent = container
+
+    local cardCorner = Instance.new("UICorner")
+    cardCorner.CornerRadius = UDim.new(0, 8)
+    cardCorner.Parent = card
+
+    local cardStroke = Instance.new("UIStroke")
+    cardStroke.Thickness = 1
+    cardStroke.Color = accentColor
+    cardStroke.Transparency = 0.7
+    cardStroke.Parent = card
+
+    local leftBar = Instance.new("Frame")
+    leftBar.Size = UDim2.new(0, 3, 1, 0)
+    leftBar.Position = UDim2.fromOffset(0, 0)
+    leftBar.BackgroundColor3 = accentColor
+    leftBar.BorderSizePixel = 0
+    leftBar.BackgroundTransparency = 1
+    leftBar.Parent = card
+
+    local iconImg = Instance.new("ImageLabel")
+    iconImg.Size = UDim2.fromOffset(16, 16)
+    iconImg.Position = UDim2.fromOffset(12, 18)
+    iconImg.BackgroundTransparency = 1
+    setIconImage(iconImg, iconId)
+    iconImg.ImageTransparency = 1
+    iconImg.ScaleType = Enum.ScaleType.Fit
+    iconImg.Parent = card
+
+    local headerLabel = Instance.new("TextLabel")
+    headerLabel.Size = UDim2.new(1, -40, 0, 18)
+    headerLabel.Position = UDim2.fromOffset(36, 8)
+    headerLabel.BackgroundTransparency = 1
+    headerLabel.Text = titleText
+    headerLabel.Font = font
+    headerLabel.TextSize = 11
+    headerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    headerLabel.TextTransparency = 1
+    headerLabel.TextXAlignment = Enum.TextXAlignment.Left
+    headerLabel.Parent = card
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, -40, 0, 20)
+    textLabel.Position = UDim2.fromOffset(36, 26)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = bodyText
+    textLabel.Font = font
+    textLabel.TextSize = 10
+    textLabel.TextColor3 = Color3.fromRGB(160, 160, 160)
+    textLabel.TextTransparency = 1
+    textLabel.TextWrapped = true
+    textLabel.TextXAlignment = Enum.TextXAlignment.Left
+    textLabel.TextYAlignment = Enum.TextYAlignment.Top
+    textLabel.Parent = card
+
+    tween(card, 0.3, {BackgroundTransparency = 0.15})
+    tween(leftBar, 0.3, {BackgroundTransparency = 0})
+    tween(iconImg, 0.3, {ImageTransparency = 0})
+    tween(headerLabel, 0.3, {TextTransparency = 0})
+    tween(textLabel, 0.3, {TextTransparency = 0})
+
+    task.delay(duration, function()
+        if card and card.Parent then
+            local t = tween(card, 0.3, {BackgroundTransparency = 1})
+            tween(leftBar, 0.3, {BackgroundTransparency = 1})
+            tween(iconImg, 0.3, {ImageTransparency = 1})
+            tween(headerLabel, 0.3, {TextTransparency = 1})
+            tween(textLabel, 0.3, {TextTransparency = 1})
+            t.Completed:Connect(function()
+                card:Destroy()
+            end)
+        end
+    end)
+
+    return card
+end
+
+function EZUI:_syncConfigToControls(cfg)
+    if not cfg then return end
+    for _, screen in pairs(self.Screens) do
+        for _, tab in ipairs(screen.tabs or {}) do
+            for _, item in ipairs(tab.items or {}) do
+                local nameLower = item.name and item.name:lower() or ""
+                
+                -- Theme Selector
+                if item.type == "selector" and (nameLower:find("theme") or item.isThemeSelector) then
+                    if cfg.Theme and item.options then
+                        for idx, opt in ipairs(item.options) do
+                            local idStr = tostring(opt.id or opt.name or opt)
+                            if idStr:lower() == tostring(cfg.Theme):lower() then
+                                item.value = idx
+                                break
+                            end
+                        end
+                    end
+                -- Font Selector
+                elseif item.type == "selector" and (nameLower:find("font") or item.isFontSelector) then
+                    if cfg.Font and item.options then
+                        for idx, opt in ipairs(item.options) do
+                            local idStr = tostring(opt.id or opt.name or opt)
+                            if idStr:lower() == tostring(cfg.Font):lower() then
+                                item.value = idx
+                                break
+                            end
+                        end
+                    end
+                -- Banner Selector
+                elseif item.type == "selector" and (nameLower:find("banner") or item.isBanner) then
+                    if cfg.Banner and item.options then
+                        for idx, opt in ipairs(item.options) do
+                            local idStr = tostring(opt.id or opt.name or opt)
+                            local formattedOptId = formatAssetId(opt.id or opt.name or opt)
+                            if idStr:lower() == tostring(cfg.Banner):lower() or formattedOptId == cfg.Banner then
+                                item.value = idx
+                                break
+                            end
+                        end
+                    end
+                -- Notify Position Selector
+                elseif item.type == "selector" and (nameLower:find("notify") or nameLower:find("position")) then
+                    if cfg.NotifyPosition and item.options then
+                        for idx, opt in ipairs(item.options) do
+                            local idStr = tostring(opt.id or opt.name or opt)
+                            if idStr:lower() == tostring(cfg.NotifyPosition):lower() then
+                                item.value = idx
+                                break
+                            end
+                        end
+                    end
+                -- Menu Opacity Slider
+                elseif item.type == "slider" and nameLower:find("opacity") then
+                    if cfg.Opacity then
+                        item.value = cfg.Opacity
+                    end
+                -- Watermark Toggle
+                elseif item.type == "toggle" and nameLower:find("watermark") then
+                    if cfg.ShowWatermark ~= nil then
+                        item.value = cfg.ShowWatermark
+                    end
+                end
+            end
+        end
+    end
+end
+
+function EZUI:SaveConfig()
+    if not writefile then return end
+    local filename = self.ConfigFileName or ((self.Title or "EZUI") .. "_config.json")
+    local cfg = {
+        Theme = self.CurrentThemeName or (type(self.Theme) == "string" and self.Theme or "Green"),
+        Font = self.FontName or "GothamMedium",
+        Banner = self.CurrentBannerId or "",
+        NotifyPosition = self.NotifyPosition or "TopRight",
+        Opacity = self.OpacityValue or 85,
+        ShowWatermark = self.ShowWatermark ~= false
+    }
+    pcall(function()
+        if isfolder and not isfolder("EZUI_Configs") then
+            makefolder("EZUI_Configs")
+        end
+        local path = (isfolder and isfolder("EZUI_Configs")) and ("EZUI_Configs/" .. filename) or filename
+        writefile(path, HttpService:JSONEncode(cfg))
+    end)
+end
+
+function EZUI:LoadConfig()
+    if not readfile then return end
+    local filename = self.ConfigFileName or ((self.Title or "EZUI") .. "_config.json")
+    local path = (isfolder and isfolder("EZUI_Configs")) and ("EZUI_Configs/" .. filename) or filename
+    local exists = false
+    if isfile then
+        pcall(function() exists = isfile(path) end)
+    end
+    if not exists then return end
+
+    local content = nil
+    pcall(function() content = readfile(path) end)
+    if not content or #content == 0 then return end
+
+    local ok, cfg = pcall(function() return HttpService:JSONDecode(content) end)
+    if not ok or type(cfg) ~= "table" then return end
+
+    local userCfg = self.UserConfig or {}
+    if cfg.Theme and not userCfg.Theme then 
+        self:SetTheme(cfg.Theme, true) 
+    end
+    if cfg.Font and not userCfg.Font then 
+        self:SetFont(cfg.Font, true) 
+    end
+    if cfg.Banner and cfg.Banner ~= "" and not userCfg.Banner then 
+        self:SetBanner(cfg.Banner, true) 
+    end
+    if cfg.NotifyPosition and not userCfg.NotifyPosition then 
+        self:SetNotifyPosition(cfg.NotifyPosition, true) 
+    end
+    if cfg.Opacity and not userCfg.Opacity then 
+        self:SetOpacity(cfg.Opacity, true) 
+    end
+    if cfg.ShowWatermark ~= nil and userCfg.ShowWatermark == nil then 
+        self:SetWatermarkVisible(cfg.ShowWatermark, true) 
+    end
+
+    self:_syncConfigToControls(cfg)
+end
+
+function EZUI:_applyFont()
+    local font = self.Font or Enum.Font.GothamMedium
+    if self.EzLogoText then self.EzLogoText.Font = font end
+    if self.TitleText then self.TitleText.Font = font end
+    if self.ScreenTitleText then self.ScreenTitleText.Font = font end
+    if self.FooterLeft then self.FooterLeft.Font = font end
+    if self.FooterCounter then self.FooterCounter.Font = font end
+    if self.SideTitle then self.SideTitle.Font = font end
+    if self.PreviewText then self.PreviewText.Font = font end
+
+    for _, c in ipairs(self.TabBar:GetChildren()) do
+        if c:IsA("TextButton") then
+            c.Font = font
+        end
+    end
+
+    for _, inst in pairs(self.RowInstances) do
+        if inst.Label then inst.Label.Font = font end
+        if inst.SelectorLabel then inst.SelectorLabel.Font = font end
+        if inst.SepText then inst.SepText.Font = font end
+    end
+end
+
+function EZUI:SetFont(fontVal, skipSave)
+    self.FontName = typeof(fontVal) == "EnumItem" and fontVal.Name or tostring(fontVal)
+    self.Font = parseFont(fontVal)
+    self:_applyFont()
+    if not skipSave then self:SaveConfig() end
+end
+
+function EZUI:SetTheme(themePresetOrTable, skipSave)
     if type(themePresetOrTable) == "string" and PRESET_THEMES[themePresetOrTable] then
         self.Theme = table.clone(PRESET_THEMES[themePresetOrTable])
+        self.CurrentThemeName = themePresetOrTable
     elseif type(themePresetOrTable) == "table" then
         self.Theme = table.clone(themePresetOrTable)
     end
     self:_applyTheme()
+    if not skipSave then self:SaveConfig() end
 end
 
 function EZUI:SetAccentColor(color3)
@@ -223,6 +1034,28 @@ function EZUI:SetTitle(titleText)
     self.Title = titleText or ""
     if self.TitleText then
         self.TitleText.Text = self.Title
+    end
+end
+
+function EZUI:SetFooterText(text)
+    self.FooterText = text or ""
+    if self.FooterLeft then
+        self.FooterLeft.Text = self.FooterText
+    end
+end
+
+function EZUI:SetSubHeaderTitle(titleText)
+    if self.ScreenTitleText then
+        self.ScreenTitleText.Text = titleText or ""
+    end
+end
+
+function EZUI:SetSubHeaderVisible(visible)
+    if self.SubHeader then
+        self.SubHeader.Visible = visible
+        if self.TabBar then
+            self.TabBar.Position = visible and UDim2.new(0, 0, 0, 104) or UDim2.new(0, 0, 0, 80)
+        end
     end
 end
 
@@ -261,40 +1094,282 @@ function EZUI:SetLogo(logo)
     end
 end
 
-function EZUI:SetWatermarkVisible(visible)
+function EZUI:SetWatermarkVisible(visible, skipSave)
+    self.ShowWatermark = (visible ~= false)
     if self.EzLogoImage and self.EzLogoImage.Image ~= "" then
-        self.EzLogoImage.Visible = visible
+        self.EzLogoImage.Visible = self.ShowWatermark
         if self.EzLogoText then self.EzLogoText.Visible = false end
     elseif self.EzLogoText then
-        self.EzLogoText.Visible = visible
+        self.EzLogoText.Visible = self.ShowWatermark
         if self.EzLogoImage then self.EzLogoImage.Visible = false end
     end
     if self.TitleText then
-        self.TitleText.Visible = visible
+        self.TitleText.Visible = self.ShowWatermark
+    end
+    if not skipSave then self:SaveConfig() end
+end
+
+function EZUI:SetBanner(bannerUrlOrAssetId, skipSave)
+    if not self.BannerImage then return end
+    local id = formatAssetId(bannerUrlOrAssetId)
+    self.BannerImage.Image = id
+    self.CurrentBannerId = id
+    if not skipSave then self:SaveConfig() end
+end
+
+function EZUI:SetOpacity(val, skipSave)
+    local pctNum = tonumber(val) or 85
+    self.OpacityValue = pctNum
+    local pct = math.clamp(pctNum, 0, 100) / 100
+    self.OpacityFraction = pct
+    
+    local transBg = 1 - (0.85 * pct)
+    local transSolid = 1 - (1.0 * pct)
+    
+    if self.Window then self.Window.BackgroundTransparency = transBg end
+    if self.Banner then self.Banner.BackgroundTransparency = transSolid end
+    if self.BannerFiller then self.BannerFiller.BackgroundTransparency = transSolid end
+    if self.BannerImage then self.BannerImage.ImageTransparency = transSolid end
+    if self.SubHeader then self.SubHeader.BackgroundTransparency = transSolid end
+    if self.TabBar then self.TabBar.BackgroundTransparency = transSolid end
+    if self.HighlightBox then self.HighlightBox.BackgroundTransparency = transBg end
+    if self.FooterBar then self.FooterBar.BackgroundTransparency = transSolid end
+    if self.FooterFiller then self.FooterFiller.BackgroundTransparency = transSolid end
+    if self.SidePanel then self.SidePanel.BackgroundTransparency = transBg end
+    if self.PreviewImage then self.PreviewImage.ImageTransparency = transSolid end
+    if self.SideTopAccent then self.SideTopAccent.BackgroundTransparency = transSolid end
+    
+    if self.EzLogoText then self.EzLogoText.TextTransparency = transSolid end
+    if self.EzLogoImage then self.EzLogoImage.ImageTransparency = transSolid end
+    if self.TitleText then self.TitleText.TextTransparency = transSolid end
+    if self.ScreenTitleText then self.ScreenTitleText.TextTransparency = transSolid end
+    if self.SideTitle then self.SideTitle.TextTransparency = transSolid end
+    if self.PreviewText then self.PreviewText.TextTransparency = transSolid end
+    if self.FooterLeft then self.FooterLeft.TextTransparency = transSolid end
+    if self.FooterCounter then self.FooterCounter.TextTransparency = transSolid end
+
+    for _, inst in pairs(self.RowInstances) do
+        if inst.IconImage then
+            inst.IconImage.ImageTransparency = transSolid
+        end
+    end
+
+    if not skipSave then self:SaveConfig() end
+end
+
+function EZUI:SetPreview(item, previewConfig)
+    if type(item) == "table" then
+        item.preview = previewConfig
+    end
+    self:_updateSidePanel()
+    return item
+end
+EZUI.SetSidePreview = EZUI.SetPreview
+
+function EZUI:SetWindowSize(w, h)
+    if not self.Window then return end
+    w = tonumber(w) or self.WindowWidth or 320
+    h = tonumber(h) or self.WindowHeight or 376
+    self.WindowWidth = w
+    self.WindowHeight = h
+
+    self.Window.Size = UDim2.fromOffset(w, h)
+
+    -- Dynamically recalculate MAX_VISIBLE rows to fit new window height!
+    local availableHeight = h - 110 - 26 -- TabBar starts at 110, Footer is 26px
+    local maxVis = math.max(1, math.floor(availableHeight / ROW_HEIGHT))
+    MAX_VISIBLE = maxVis
+
+    if self.BodyContainer then
+        self.BodyContainer.Size = UDim2.new(1, 0, 0, maxVis * ROW_HEIGHT)
+    end
+
+    self:_updateHighlightAndScroll()
+end
+
+function EZUI:SetWidth(w)
+    self:SetWindowSize(w, self.WindowHeight or 376)
+end
+
+function EZUI:SetHeight(h)
+    self:SetWindowSize(self.WindowWidth or 320, h)
+end
+
+function EZUI:SetWindowPosition(pos, anchor)
+    if not self.Window then return end
+    self.WindowPositionSetting = pos
+    if typeof(pos) == "UDim2" then
+        self.Window.Position = pos
+        if anchor then self.Window.AnchorPoint = anchor end
+    elseif type(pos) == "string" then
+        local p = pos:lower():gsub("[%s_%-]", "")
+        if p == "center" or p == "middle" then
+            self.Window.AnchorPoint = Vector2.new(0.5, 0.5)
+            self.Window.Position = UDim2.new(0.5, 0, 0.5, 0)
+        elseif p == "left" or p == "centerleft" or p == "middleleft" then
+            self.Window.AnchorPoint = Vector2.new(0, 0.5)
+            self.Window.Position = UDim2.new(0, 25, 0.5, 0)
+        elseif p == "right" or p == "centerright" or p == "middleright" then
+            self.Window.AnchorPoint = Vector2.new(1, 0.5)
+            self.Window.Position = UDim2.new(1, -25, 0.5, 0)
+        elseif p == "top" or p == "topmiddle" or p == "topcenter" or p == "centertop" or p == "middletop" then
+            self.Window.AnchorPoint = Vector2.new(0.5, 0)
+            self.Window.Position = UDim2.new(0.5, 0, 0, 25)
+        elseif p == "topleft" or p == "lefttop" then
+            self.Window.AnchorPoint = Vector2.new(0, 0)
+            self.Window.Position = UDim2.new(0, 25, 0, 25)
+        elseif p == "topright" or p == "righttop" then
+            self.Window.AnchorPoint = Vector2.new(1, 0)
+            self.Window.Position = UDim2.new(1, -25, 0, 25)
+        elseif p == "bottom" or p == "bottommiddle" or p == "bottomcenter" or p == "centerbottom" or p == "middlebottom" then
+            self.Window.AnchorPoint = Vector2.new(0.5, 1)
+            self.Window.Position = UDim2.new(0.5, 0, 1, -25)
+        elseif p == "bottomleft" or p == "leftbottom" then
+            self.Window.AnchorPoint = Vector2.new(0, 1)
+            self.Window.Position = UDim2.new(0, 25, 1, -25)
+        elseif p == "bottomright" or p == "rightbottom" then
+            self.Window.AnchorPoint = Vector2.new(1, 1)
+            self.Window.Position = UDim2.new(1, -25, 1, -25)
+        end
+    end
+end
+EZUI.SetPosition = EZUI.SetWindowPosition
+
+function EZUI:SetCornerRadius(radius)
+    local r = 10
+    if type(radius) == "number" then
+        r = radius
+    elseif type(radius) == "string" then
+        local str = radius:lower()
+        if str == "sharp" or str == "square" or str == "none" then
+            r = 0
+        elseif str == "rounded" or str == "medium" then
+            r = 10
+        elseif str == "soft" or str == "pill" or str == "large" then
+            r = 16
+        end
+    end
+    self.CornerRadiusValue = r
+
+    local udim = UDim.new(0, r)
+    for _, obj in ipairs({ self.Window, self.Banner, self.BannerImage, self.SidePanel, self.FooterBar }) do
+        if obj then
+            local c = obj:FindFirstChildOfClass("UICorner")
+            if c then c.CornerRadius = udim end
+        end
     end
 end
 
-function EZUI:SetBanner(bannerUrlOrAssetId)
-    if not self.BannerImage then return end
-    self.BannerImage.Image = bannerUrlOrAssetId or ""
+function EZUI:SetPreviewPosition(posName)
+    if not self.SidePanel then return end
+    posName = posName or "Right"
+    self.PreviewPosition = posName
+    local p = posName:lower()
+
+    if p == "right" then
+        self.SidePanel.AnchorPoint = Vector2.new(0, 0)
+        self.SidePanel.Position = UDim2.new(1, 10, 0, 0)
+    elseif p == "left" then
+        self.SidePanel.AnchorPoint = Vector2.new(1, 0)
+        self.SidePanel.Position = UDim2.new(0, -10, 0, 0)
+    elseif p == "bottom" then
+        self.SidePanel.AnchorPoint = Vector2.new(0, 0)
+        self.SidePanel.Position = UDim2.new(0, 0, 1, 10)
+    elseif p == "top" then
+        self.SidePanel.AnchorPoint = Vector2.new(0, 1)
+        self.SidePanel.Position = UDim2.new(0, 0, 0, -10)
+    end
+end
+
+function EZUI:SetPreviewShape(shapeName)
+    if not self.PlayerAvatarCorner then return end
+    shapeName = shapeName or "Circle"
+    self.PreviewShape = shapeName
+    local s = shapeName:lower()
+
+    if s == "circle" or s == "round" then
+        self.PlayerAvatarCorner.CornerRadius = UDim.new(1, 0)
+    elseif s == "square" or s == "sharp" then
+        self.PlayerAvatarCorner.CornerRadius = UDim.new(0, 0)
+    elseif s == "rounded" or s == "card" then
+        self.PlayerAvatarCorner.CornerRadius = UDim.new(0, 8)
+    end
+end
+
+function EZUI:SetPreviewLayout(layoutName)
+    if not self.PlayerFrame then return end
+    layoutName = layoutName or "Horizontal"
+    self.PreviewLayoutMode = layoutName
+    local l = layoutName:lower()
+
+    if l == "vertical" or l == "stacked" then
+        self.SidePanel.Size = UDim2.fromOffset(180, 150)
+        self.PlayerAvatarImg.Size = UDim2.fromOffset(54, 54)
+        self.PlayerAvatarImg.Position = UDim2.new(0.5, -27, 0, 4)
+        
+        self.PlayerNameLabel.Size = UDim2.new(1, -10, 0, 32)
+        self.PlayerNameLabel.Position = UDim2.new(0, 5, 0, 62)
+        self.PlayerNameLabel.TextXAlignment = Enum.TextXAlignment.Center
+        
+        self.PlayerAgeLabel.Size = UDim2.new(1, -10, 0, 20)
+        self.PlayerAgeLabel.Position = UDim2.new(0, 5, 0, 96)
+        self.PlayerAgeLabel.TextXAlignment = Enum.TextXAlignment.Center
+    else -- "Horizontal"
+        self.SidePanel.Size = UDim2.fromOffset(180, 110)
+        self.PlayerAvatarImg.Size = UDim2.fromOffset(48, 48)
+        self.PlayerAvatarImg.Position = UDim2.fromOffset(4, 8)
+        
+        self.PlayerNameLabel.Size = UDim2.new(1, -60, 0, 32)
+        self.PlayerNameLabel.Position = UDim2.fromOffset(58, 6)
+        self.PlayerNameLabel.TextXAlignment = Enum.TextXAlignment.Left
+        
+        self.PlayerAgeLabel.Size = UDim2.new(1, -60, 0, 20)
+        self.PlayerAgeLabel.Position = UDim2.fromOffset(58, 38)
+        self.PlayerAgeLabel.TextXAlignment = Enum.TextXAlignment.Left
+    end
+end
+
+function EZUI:SetItemIcon(item, icon)
+    if type(item) == "table" then
+        item.icon = icon
+    end
+    self:_buildTabContent()
+    return item
 end
 
 function EZUI:_applyTheme()
     local theme = self.Theme
-    self.Window.BackgroundColor3 = theme.WindowBg
-    self.Banner.BackgroundColor3 = theme.HeaderBg
-    self.BannerFiller.BackgroundColor3 = theme.HeaderBg
-    self.EzLogoText.TextColor3 = theme.AccentColor
-    self.EzLogoImage.ImageColor3 = Color3.new(1, 1, 1)
-    self.TitleText.TextColor3 = theme.AccentColor
-    self.TabBar.BackgroundColor3 = theme.TabBarBg
-    self.HighlightBox.BackgroundColor3 = theme.HighlightBg
-    self.FooterBar.BackgroundColor3 = theme.HeaderBg
-    self.FooterFiller.BackgroundColor3 = theme.HeaderBg
-    self.FooterLeft.TextColor3 = theme.TextGray
-    self.FooterCounter.TextColor3 = theme.TextGray
-    self.SidePanel.BackgroundColor3 = theme.WindowBg
-    self.SideTopAccent.BackgroundColor3 = theme.AccentColor
+    if self.Window then self.Window.BackgroundColor3 = theme.WindowBg end
+    if self.Banner then self.Banner.BackgroundColor3 = theme.HeaderBg end
+    if self.BannerFiller then self.BannerFiller.BackgroundColor3 = theme.HeaderBg end
+    if self.SubHeader then self.SubHeader.BackgroundColor3 = theme.SubHeaderBg or Color3.fromRGB(10, 10, 10) end
+    if self.EzLogoText then
+        self.EzLogoText.TextColor3 = theme.AccentColor
+        self.EzLogoText.Font = self.Font
+    end
+    if self.EzLogoImage then self.EzLogoImage.ImageColor3 = Color3.new(1, 1, 1) end
+    if self.TitleText then
+        self.TitleText.TextColor3 = theme.AccentColor
+        self.TitleText.Font = self.Font
+    end
+    if self.ScreenTitleText then self.ScreenTitleText.Font = self.Font end
+    if self.TabBar then self.TabBar.BackgroundColor3 = theme.TabBarBg end
+    if self.ActiveLine then self.ActiveLine.BackgroundColor3 = theme.AccentColor end
+    if self.HighlightBox then self.HighlightBox.BackgroundColor3 = theme.HighlightBg end
+    if self.FooterBar then self.FooterBar.BackgroundColor3 = theme.HeaderBg end
+    if self.FooterFiller then self.FooterFiller.BackgroundColor3 = theme.HeaderBg end
+    if self.FooterLeft then
+        self.FooterLeft.TextColor3 = theme.TextGray
+        self.FooterLeft.Font = self.Font
+    end
+    if self.FooterCounter then
+        self.FooterCounter.TextColor3 = theme.TextGray
+        self.FooterCounter.Font = self.Font
+    end
+    if self.SidePanel then self.SidePanel.BackgroundColor3 = theme.WindowBg end
+    if self.SideTopAccent then self.SideTopAccent.BackgroundColor3 = theme.AccentColor end
+    if self.SideTitle then self.SideTitle.Font = self.Font end
+    if self.PreviewText then self.PreviewText.Font = self.Font end
     
     self:_buildHeaders()
     self:_buildTabContent()
@@ -310,10 +1385,9 @@ function EZUI:_buildGui()
     if not gui.Parent then gui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
     self.Gui = gui
 
-    -- Fixed Position to Left Side (No Dragging)
     local window = Instance.new("Frame")
-    window.Size = UDim2.fromOffset(320, 388)
-    window.Position = UDim2.new(0, 25, 0.5, -194)
+    window.Size = UDim2.fromOffset(320, 376)
+    window.Position = UDim2.new(0, 25, 0.5, -188)
     window.BackgroundColor3 = self.Theme.WindowBg
     window.BackgroundTransparency = 0.15 
     window.BorderSizePixel = 0
@@ -321,10 +1395,16 @@ function EZUI:_buildGui()
     self.Window = window
 
     local windowCorner = Instance.new("UICorner")
-    windowCorner.CornerRadius = UDim.new(0, 6)
+    windowCorner.CornerRadius = UDim.new(0, 10)
     windowCorner.Parent = window
 
-    -- Banner Header
+    local windowStroke = Instance.new("UIStroke")
+    windowStroke.Thickness = 1
+    windowStroke.Color = Color3.fromRGB(55, 55, 75)
+    windowStroke.Transparency = 0.4
+    windowStroke.Parent = window
+    self.WindowStroke = windowStroke
+
     local banner = Instance.new("Frame")
     banner.Size = UDim2.new(1, 0, 0, 80)
     banner.BackgroundColor3 = self.Theme.HeaderBg
@@ -334,19 +1414,19 @@ function EZUI:_buildGui()
     self.Banner = banner
 
     local bannerCorner = Instance.new("UICorner")
-    bannerCorner.CornerRadius = UDim.new(0, 6)
+    bannerCorner.CornerRadius = UDim.new(0, 10)
     bannerCorner.Parent = banner
 
     local bannerFiller = Instance.new("Frame")
-    bannerFiller.Size = UDim2.new(1, 0, 0, 6)
-    bannerFiller.Position = UDim2.new(0, 0, 1, -6)
+    bannerFiller.Size = UDim2.new(1, 0, 0, 10)
+    bannerFiller.Position = UDim2.new(0, 0, 1, -10)
     bannerFiller.BackgroundColor3 = self.Theme.HeaderBg
     bannerFiller.BorderSizePixel = 0
     bannerFiller.Parent = banner
     self.BannerFiller = bannerFiller
 
     local bannerImage = Instance.new("ImageLabel")
-    bannerImage.Size = UDim2.new(1, 0, 1, 6) 
+    bannerImage.Size = UDim2.new(1, 0, 1, 10) 
     bannerImage.Position = UDim2.new(0, 0, 0, 0)
     bannerImage.BackgroundTransparency = 1
     bannerImage.Image = ""
@@ -356,10 +1436,9 @@ function EZUI:_buildGui()
     self.BannerImage = bannerImage
 
     local bannerImgCorner = Instance.new("UICorner")
-    bannerImgCorner.CornerRadius = UDim.new(0, 6)
+    bannerImgCorner.CornerRadius = UDim.new(0, 10)
     bannerImgCorner.Parent = bannerImage
 
-    -- Left Logo Image (Supports Asset ID / Image URL)
     local ezLogoImg = Instance.new("ImageLabel")
     ezLogoImg.Size = UDim2.fromOffset(40, 40)
     ezLogoImg.Position = UDim2.fromOffset(16, 20)
@@ -371,16 +1450,15 @@ function EZUI:_buildGui()
     self.EzLogoImage = ezLogoImg
 
     local ezLogoImgCorner = Instance.new("UICorner")
-    ezLogoImgCorner.CornerRadius = UDim.new(0, 6)
+    ezLogoImgCorner.CornerRadius = UDim.new(0, 8)
     ezLogoImgCorner.Parent = ezLogoImg
 
-    -- Left Logo Text
     local ezLogoText = Instance.new("TextLabel")
     ezLogoText.Size = UDim2.fromOffset(60, 46)
     ezLogoText.Position = UDim2.fromOffset(16, 16)
     ezLogoText.BackgroundTransparency = 1
     ezLogoText.Text = self.LogoText or "EZ"
-    ezLogoText.Font = Enum.Font.GothamBlack
+    ezLogoText.Font = self.Font
     ezLogoText.TextSize = 34
     ezLogoText.TextColor3 = self.Theme.AccentColor
     ezLogoText.TextStrokeTransparency = 0.7 
@@ -389,13 +1467,12 @@ function EZUI:_buildGui()
     ezLogoText.Parent = banner
     self.EzLogoText = ezLogoText
 
-    -- Right Title Text
     local titleText = Instance.new("TextLabel")
     titleText.Size = UDim2.fromOffset(150, 30)
     titleText.Position = UDim2.new(1, -166, 0, 25)
     titleText.BackgroundTransparency = 1
     titleText.Text = self.Title or "EZUI"
-    titleText.Font = Enum.Font.GothamBlack
+    titleText.Font = self.Font
     titleText.TextSize = 24
     titleText.TextXAlignment = Enum.TextXAlignment.Right
     titleText.TextColor3 = self.Theme.AccentColor
@@ -404,7 +1481,6 @@ function EZUI:_buildGui()
     titleText.Parent = banner
     self.TitleText = titleText
 
-    -- Tab Bar
     local tabBar = Instance.new("Frame")
     tabBar.Size = UDim2.new(1, 0, 0, 30)
     tabBar.Position = UDim2.new(0, 0, 0, 80)
@@ -423,12 +1499,15 @@ function EZUI:_buildGui()
     local activeLine = Instance.new("Frame")
     activeLine.AnchorPoint = Vector2.new(0, 1)
     activeLine.Position = UDim2.new(0, 0, 1, 0)
-    activeLine.BackgroundColor3 = self.Theme.TextWhite
+    activeLine.BackgroundColor3 = self.Theme.AccentColor
     activeLine.BorderSizePixel = 0
     activeLine.Parent = tabBar
     self.ActiveLine = activeLine
 
-    -- Body Area
+    local activeLineCorner = Instance.new("UICorner")
+    activeLineCorner.CornerRadius = UDim.new(0, 2)
+    activeLineCorner.Parent = activeLine
+
     local bodyContainer = Instance.new("Frame")
     bodyContainer.Size = UDim2.new(1, 0, 0, MAX_VISIBLE * ROW_HEIGHT)
     bodyContainer.Position = UDim2.new(0, 0, 0, 110)
@@ -443,7 +1522,6 @@ function EZUI:_buildGui()
     innerScroll.Parent = bodyContainer
     self.InnerScroll = innerScroll
 
-    -- Highlight Selection
     local highlightBox = Instance.new("Frame")
     highlightBox.Size = UDim2.new(1, 0, 0, ROW_HEIGHT)
     highlightBox.Position = UDim2.new(0, 0, 0, 0)
@@ -452,7 +1530,10 @@ function EZUI:_buildGui()
     highlightBox.Parent = innerScroll
     self.HighlightBox = highlightBox
 
-    -- Footer Bar
+    local highlightBoxCorner = Instance.new("UICorner")
+    highlightBoxCorner.CornerRadius = UDim.new(0, 6)
+    highlightBoxCorner.Parent = highlightBox
+
     local footerBar = Instance.new("Frame")
     footerBar.Size = UDim2.new(1, 0, 0, 26)
     footerBar.Position = UDim2.new(0, 0, 1, -26)
@@ -479,7 +1560,7 @@ function EZUI:_buildGui()
     footerLeft.BackgroundTransparency = 1
     footerLeft.Text = self.FooterText
     footerLeft.TextColor3 = self.Theme.TextGray
-    footerLeft.Font = Enum.Font.Gotham
+    footerLeft.Font = self.Font
     footerLeft.TextSize = 10
     footerLeft.TextXAlignment = Enum.TextXAlignment.Left
     footerLeft.Parent = footerBar
@@ -489,14 +1570,13 @@ function EZUI:_buildGui()
     footerCounter.Size = UDim2.fromOffset(60, 26)
     footerCounter.Position = UDim2.new(1, -72, 0, 0)
     footerCounter.BackgroundTransparency = 1
-    footerCounter.Font = Enum.Font.Gotham
+    footerCounter.Font = self.Font
     footerCounter.TextSize = 10
     footerCounter.TextColor3 = self.Theme.TextGray
     footerCounter.TextXAlignment = Enum.TextXAlignment.Right
     footerCounter.Parent = footerBar
     self.FooterCounter = footerCounter
 
-    -- Side Panel (Live Banner Preview Window)
     local sidePanel = Instance.new("Frame")
     sidePanel.Size = UDim2.fromOffset(180, 110)
     sidePanel.Position = UDim2.new(1, 10, 0, 0)
@@ -508,15 +1588,22 @@ function EZUI:_buildGui()
     self.SidePanel = sidePanel
 
     local sideCorner = Instance.new("UICorner")
-    sideCorner.CornerRadius = UDim.new(0, 6)
+    sideCorner.CornerRadius = UDim.new(0, 10)
     sideCorner.Parent = sidePanel
+
+    local sideStroke = Instance.new("UIStroke")
+    sideStroke.Thickness = 1
+    sideStroke.Color = Color3.fromRGB(55, 55, 75)
+    sideStroke.Transparency = 0.4
+    sideStroke.Parent = sidePanel
+    self.SideStroke = sideStroke
 
     local sideTitle = Instance.new("TextLabel")
     sideTitle.Size = UDim2.new(1, -20, 0, 26)
     sideTitle.Position = UDim2.fromOffset(10, 0)
     sideTitle.BackgroundTransparency = 1
-    sideTitle.Text = "Banner Preview"
-    sideTitle.Font = Enum.Font.GothamMedium
+    sideTitle.Text = "Preview"
+    sideTitle.Font = self.Font
     sideTitle.TextSize = 11
     sideTitle.TextColor3 = self.Theme.TextWhite
     sideTitle.TextXAlignment = Enum.TextXAlignment.Left
@@ -547,7 +1634,7 @@ function EZUI:_buildGui()
     previewText.Size = UDim2.new(1, -20, 1, -40)
     previewText.Position = UDim2.fromOffset(10, 32)
     previewText.BackgroundTransparency = 1
-    previewText.Font = Enum.Font.Gotham
+    previewText.Font = self.Font
     previewText.TextSize = 11
     previewText.TextColor3 = self.Theme.TextGray
     previewText.TextWrapped = true
@@ -556,47 +1643,57 @@ function EZUI:_buildGui()
     previewText.Visible = false
     previewText.Parent = sidePanel
     self.PreviewText = previewText
+
+    -- Player Profile Preview Component Elements
+    local playerFrame = Instance.new("Frame")
+    playerFrame.Size = UDim2.new(1, -20, 1, -34)
+    playerFrame.Position = UDim2.fromOffset(10, 32)
+    playerFrame.BackgroundTransparency = 1
+    playerFrame.Visible = false
+    playerFrame.Parent = sidePanel
+    self.PlayerFrame = playerFrame
+
+    local avatarImg = Instance.new("ImageLabel")
+    avatarImg.Size = UDim2.fromOffset(48, 48)
+    avatarImg.Position = UDim2.fromOffset(4, 8)
+    avatarImg.BackgroundTransparency = 1
+    avatarImg.ScaleType = Enum.ScaleType.Crop
+    avatarImg.Parent = playerFrame
+    self.PlayerAvatarImg = avatarImg
+
+    local avatarCorner = Instance.new("UICorner")
+    avatarCorner.CornerRadius = UDim.new(1, 0)
+    avatarCorner.Parent = avatarImg
+    self.PlayerAvatarCorner = avatarCorner
+
+    local playerNameLabel = Instance.new("TextLabel")
+    playerNameLabel.Size = UDim2.new(1, -60, 0, 32)
+    playerNameLabel.Position = UDim2.fromOffset(58, 6)
+    playerNameLabel.BackgroundTransparency = 1
+    playerNameLabel.Font = self.Font
+    playerNameLabel.TextSize = 11
+    playerNameLabel.TextColor3 = self.Theme.TextWhite
+    playerNameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    playerNameLabel.TextYAlignment = Enum.TextYAlignment.Top
+    playerNameLabel.TextWrapped = true
+    playerNameLabel.TextStrokeTransparency = 0.85
+    playerNameLabel.Parent = playerFrame
+    self.PlayerNameLabel = playerNameLabel
+
+    local playerAgeLabel = Instance.new("TextLabel")
+    playerAgeLabel.Size = UDim2.new(1, -60, 0, 20)
+    playerAgeLabel.Position = UDim2.fromOffset(58, 38)
+    playerAgeLabel.BackgroundTransparency = 1
+    playerAgeLabel.Font = self.Font
+    playerAgeLabel.TextSize = 10
+    playerAgeLabel.TextColor3 = self.Theme.TextGray
+    playerAgeLabel.TextXAlignment = Enum.TextXAlignment.Left
+    playerAgeLabel.TextStrokeTransparency = 0.85
+    playerAgeLabel.Parent = playerFrame
+    self.PlayerAgeLabel = playerAgeLabel
 end
 
-function EZUI:SetOpacity(val)
-    local pct = math.clamp(tonumber(val) or 85, 0, 100) / 100
-    self.OpacityFraction = pct
-    
-    local transBg = 1 - (0.85 * pct)
-    local transSolid = 1 - (1.0 * pct)
-    
-    if self.Window then self.Window.BackgroundTransparency = transBg end
-    if self.Banner then self.Banner.BackgroundTransparency = transSolid end
-    if self.BannerFiller then self.BannerFiller.BackgroundTransparency = transSolid end
-    if self.BannerImage then self.BannerImage.ImageTransparency = transSolid end
-    if self.TabBar then self.TabBar.BackgroundTransparency = transSolid end
-    if self.HighlightBox then self.HighlightBox.BackgroundTransparency = transBg end
-    if self.FooterBar then self.FooterBar.BackgroundTransparency = transSolid end
-    if self.FooterFiller then self.FooterFiller.BackgroundTransparency = transSolid end
-    if self.SidePanel then self.SidePanel.BackgroundTransparency = transBg end
-    if self.PreviewImage then self.PreviewImage.ImageTransparency = transSolid end
-    if self.SideTopAccent then self.SideTopAccent.BackgroundTransparency = transSolid end
-    
-    if self.EzLogoText then self.EzLogoText.TextTransparency = transSolid end
-    if self.EzLogoImage then self.EzLogoImage.ImageTransparency = transSolid end
-    if self.TitleText then self.TitleText.TextTransparency = transSolid end
-    if self.SideTitle then self.SideTitle.TextTransparency = transSolid end
-    if self.PreviewText then self.PreviewText.TextTransparency = transSolid end
-    if self.FooterLeft then self.FooterLeft.TextTransparency = transSolid end
-    if self.FooterCounter then self.FooterCounter.TextTransparency = transSolid end
-end
-
-function EZUI:SetSidePreview(item, previewConfig)
-    if type(item) == "table" then
-        item.preview = previewConfig
-    end
-    self:_updateSidePanel()
-    return item
-end
-
-----------------------------------------------------------------
--- SCREEN & ITEM BUILDERS
-----------------------------------------------------------------
+-- Screen and item builders
 function EZUI:CreateScreen(id, data)
     data = data or {}
     self.Screens[id] = {
@@ -608,35 +1705,54 @@ function EZUI:CreateScreen(id, data)
     return self.Screens[id]
 end
 
-function EZUI:AddTab(screenId, name)
+function EZUI:AddTab(screenId, name, icon)
     local screen = self.Screens[screenId]
     if not screen then
         screen = self:CreateScreen(screenId)
     end
-    local tab = { name = name, items = {} }
+    local tab = { name = name, items = {}, icon = icon }
     table.insert(screen.tabs, tab)
     return tab
 end
 
-function EZUI:AddToggle(tab, name, default, onChange)
-    local item = { type = "toggle", name = name, value = default or false, onChange = onChange }
+function EZUI:AddToggle(tab, name, default, onChange, icon)
+    local item = { type = "toggle", name = name, value = default or false, onChange = onChange, icon = icon }
     table.insert(tab.items, item)
     return item
 end
 
-function EZUI:AddSlider(tab, name, min, max, default, step, onChange)
-    local item = { type = "slider", name = name, min = min, max = max, value = default or min, inc = step or 1, onChange = onChange }
+function EZUI:AddSlider(tab, name, min, max, default, step, onChange, icon)
+    -- Handle signature overload: AddSlider(tab, name, min, max, default, callback, icon)
+    if type(step) == "function" then
+        icon = onChange
+        onChange = step
+        step = 1
+    elseif type(onChange) == "string" and not icon then
+        icon = onChange
+        onChange = nil
+    end
+
+    local item = {
+        type = "slider",
+        name = name,
+        min = min,
+        max = max,
+        value = default or min,
+        inc = type(step) == "number" and step or 1,
+        onChange = onChange,
+        icon = icon
+    }
     table.insert(tab.items, item)
     return item
 end
 
-function EZUI:AddSelector(tab, name, options, default, onChange)
-    local item = { type = "selector", name = name, options = options, value = default or 1, onChange = onChange }
+function EZUI:AddSelector(tab, name, options, default, onChange, icon)
+    local item = { type = "selector", name = name, options = options, value = default or 1, onChange = onChange, icon = icon }
     table.insert(tab.items, item)
     return item
 end
 
-function EZUI:AddBannerSelector(tab, name, userOptions, defaultIndex, onChange)
+function EZUI:AddBannerSelector(tab, name, userOptions, defaultIndex, onChange, icon)
     name = name or "Banner"
     userOptions = userOptions or {}
     defaultIndex = defaultIndex or 1
@@ -649,7 +1765,7 @@ function EZUI:AddBannerSelector(tab, name, userOptions, defaultIndex, onChange)
         if onChange then
             onChange(valIndex, selected, itemObj)
         end
-    end)
+    end, icon)
     item.isBanner = true
     
     if userOptions[defaultIndex] then
@@ -659,27 +1775,68 @@ function EZUI:AddBannerSelector(tab, name, userOptions, defaultIndex, onChange)
     return item
 end
 
-function EZUI:AddButton(tab, name, onClick)
-    local item = { type = "button", name = name, onClick = onClick }
+function EZUI:AddPlayerPreview(tab, name, icon)
+    name = name or "Preview"
+    icon = icon or "user"
+    local item = self:AddButton(tab, name, function() end, icon)
+    item.preview = {
+        type = "player",
+        title = "Player Profile"
+    }
+    return item
+end
+
+function EZUI:AddPlayerItem(tab, player, onClick)
+    if not player then return nil end
+    local displayName = player.DisplayName or player.Name
+    local username = player.Name
+    local labelText = displayName .. " (@" .. username .. ")"
+    
+    local item = self:AddButton(tab, labelText, function()
+        if onClick then onClick(player) end
+    end, "user")
+    
+    item.preview = {
+        type = "player",
+        playerObj = player,
+        title = displayName
+    }
+    return item
+end
+
+function EZUI:AddPlayerList(tab, onPlayerSelect)
+    for _, plr in ipairs(Players:GetPlayers()) do
+        self:AddPlayerItem(tab, plr, onPlayerSelect)
+    end
+    
+    local conn1 = Players.PlayerAdded:Connect(function(plr)
+        self:AddPlayerItem(tab, plr, onPlayerSelect)
+        self:_buildTabContent()
+    end)
+    
+    table.insert(self.Connections, conn1)
+    return tab
+end
+
+function EZUI:AddButton(tab, name, onClick, icon)
+    local item = { type = "button", name = name, onClick = onClick, icon = icon }
     table.insert(tab.items, item)
     return item
 end
 
-function EZUI:AddSeparator(tab, name)
-    local item = { type = "sep", name = name or "" }
+function EZUI:AddSeparator(tab, name, icon)
+    local item = { type = "sep", name = name or "", icon = icon }
     table.insert(tab.items, item)
     return item
 end
 
-function EZUI:AddNav(tab, name, targetScreen)
-    local item = { type = "nav", name = name, target = targetScreen }
+function EZUI:AddNav(tab, name, targetScreen, icon)
+    local item = { type = "nav", name = name, target = targetScreen, icon = icon }
     table.insert(tab.items, item)
     return item
 end
 
-----------------------------------------------------------------
--- RENDER LOGIC
-----------------------------------------------------------------
+-- Render logic
 function EZUI:GetScreen()
     return self.Screens[self.CurrentScreen]
 end
@@ -707,24 +1864,38 @@ function EZUI:_updateSidePanel()
             self.SideTitle.Text = p.title or "Preview"
         end
         
-        if p.type == "text" or p.text then
+        if p.type == "player" or p.type == "profile" or p.player then
+            if self.PlayerFrame then
+                self.PlayerFrame.Visible = true
+                local targetPlayer = p.playerObj or (typeof(p.player) == "Instance" and p.player) or LocalPlayer
+                local userId = p.userId or (targetPlayer and targetPlayer.UserId) or 1
+                local username = p.username or (targetPlayer and targetPlayer.Name) or "Player"
+                local displayName = p.displayName or (targetPlayer and targetPlayer.DisplayName) or username
+                local age = p.accountAge or p.age or (targetPlayer and targetPlayer.AccountAge) or 0
+                
+                self.PlayerAvatarImg.Image = "rbxthumb://type=AvatarHeadShot&id=" .. tostring(userId) .. "&w=150&h=150"
+                self.PlayerNameLabel.Text = displayName .. "\n(@" .. username .. ")"
+                self.PlayerAgeLabel.Text = "Age: " .. tostring(age) .. " Days"
+            end
+            if self.PreviewText then self.PreviewText.Visible = false end
+            if self.PreviewImage then self.PreviewImage.Visible = false end
+        elseif p.type == "text" or p.text then
+            if self.PlayerFrame then self.PlayerFrame.Visible = false end
             if self.PreviewText then
                 self.PreviewText.Text = p.text or ""
                 self.PreviewText.Visible = true
             end
-            if self.PreviewImage then
-                self.PreviewImage.Visible = false
-            end
+            if self.PreviewImage then self.PreviewImage.Visible = false end
         elseif p.type == "image" or p.image or p.id then
+            if self.PlayerFrame then self.PlayerFrame.Visible = false end
             local imgId = p.image or p.id or ""
             if self.PreviewImage then
-                self.PreviewImage.Image = imgId
+                self.PreviewImage.Image = formatAssetId(imgId)
                 self.PreviewImage.Visible = true
             end
-            if self.PreviewText then
-                self.PreviewText.Visible = false
-            end
+            if self.PreviewText then self.PreviewText.Visible = false end
         else
+            if self.PlayerFrame then self.PlayerFrame.Visible = false end
             if self.PreviewText then
                 self.PreviewText.Text = ""
                 self.PreviewText.Visible = true
@@ -738,15 +1909,20 @@ function EZUI:_updateSidePanel()
         if self.SideTitle then
             self.SideTitle.Text = "Banner Preview"
         end
+        if self.PlayerFrame then self.PlayerFrame.Visible = false end
         local opt = item.options[item.value]
-        if opt then
+        if opt and opt.id and opt.id ~= "" then
             if self.PreviewImage then
-                self.PreviewImage.Image = opt.id or ""
+                self.PreviewImage.Image = formatAssetId(opt.id)
                 self.PreviewImage.Visible = true
             end
+            if self.PreviewText then self.PreviewText.Visible = false end
+        else
             if self.PreviewText then
-                self.PreviewText.Visible = false
+                self.PreviewText.Text = "No Banner Selected"
+                self.PreviewText.Visible = true
             end
+            if self.PreviewImage then self.PreviewImage.Visible = false end
         end
     else
         self.SidePanel.Visible = false
@@ -849,10 +2025,11 @@ function EZUI:_buildTabContent()
                 txt.Position = UDim2.new(0.25, 0, 0, 0)
                 txt.BackgroundTransparency = 1
                 txt.Text = item.name
-                txt.Font = Enum.Font.GothamBold
+                txt.Font = self.Font
                 txt.TextSize = 10
                 txt.TextColor3 = Color3.fromRGB(120, 120, 120)
                 txt.Parent = sepFrame
+                self.RowInstances[i].SepText = txt
 
                 local lineRight = Instance.new("Frame")
                 lineRight.Size = UDim2.new(0.2, 0, 0, 1)
@@ -869,15 +2046,41 @@ function EZUI:_buildTabContent()
                 fullLine.Parent = sepFrame
             end
         else
+            local labelX = 16
+            local labelWidthOffset = 24
+
+            if item.type == "toggle" or item.type == "slider" or item.type == "selector" then
+                labelWidthOffset = 135
+            elseif item.type == "nav" then
+                labelWidthOffset = 40
+            end
+
+            if item.icon and item.icon ~= "" then
+                local iconImg = Instance.new("ImageLabel")
+                iconImg.Size = UDim2.fromOffset(14, 14)
+                iconImg.Position = UDim2.fromOffset(16, 8)
+                iconImg.BackgroundTransparency = 1
+                setIconImage(iconImg, item.icon)
+                iconImg.ScaleType = Enum.ScaleType.Fit
+                iconImg.Parent = row
+                self.RowInstances[i].IconImage = iconImg
+                
+                labelX = 36
+                labelWidthOffset = labelWidthOffset + 20
+            end
+
             local label = Instance.new("TextLabel")
-            label.Size = UDim2.new(1, -130, 1, 0)
-            label.Position = UDim2.fromOffset(16, 0)
+            label.Size = UDim2.new(1, -labelWidthOffset, 1, 0)
+            label.Position = UDim2.fromOffset(labelX, 0)
             label.BackgroundTransparency = 1
             label.Text = item.type == "slider" and (item.name..": "..tostring(item.value)) or item.name
-            label.Font = Enum.Font.GothamMedium
-            label.TextSize = 11
+            label.Font = self.Font
+            label.TextSize = 12
             label.TextColor3 = self.Theme.TextGray
+            label.TextStrokeTransparency = 0.85
+            label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
             label.TextXAlignment = Enum.TextXAlignment.Left
+            label.TextTruncate = Enum.TextTruncate.AtEnd
             label.Parent = row
             
             self.RowInstances[i].Label = label
@@ -950,9 +2153,11 @@ function EZUI:_buildTabContent()
                 valLabel.Position = UDim2.new(1, -132, 0, 0)
                 valLabel.BackgroundTransparency = 1
                 valLabel.Text = "< " .. item.options[item.value].name .. " >"
-                valLabel.Font = Enum.Font.GothamMedium
-                valLabel.TextSize = 11
+                valLabel.Font = self.Font
+                valLabel.TextSize = 12
                 valLabel.TextColor3 = self.Theme.TextGray
+                valLabel.TextStrokeTransparency = 0.85
+                valLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
                 valLabel.TextXAlignment = Enum.TextXAlignment.Right
                 valLabel.Parent = row
                 
@@ -972,9 +2177,31 @@ function EZUI:_buildTabContent()
     self:_updateHighlightAndScroll()
 end
 
+function EZUI:SwitchTab(index)
+    local s = self:GetScreen()
+    if not s or not s.tabs[index] then return end
+    
+    self.CurrentTabIndex = index
+    self.SelectedIndex = 1
+    self.ScrollOffset = 0
+    
+    self:_buildHeaders()
+
+    if self.InnerScroll then
+        local currentY = -self.ScrollOffset * ROW_HEIGHT
+        tween(self.InnerScroll, 0.08, {Position = UDim2.new(0, -12, 0, currentY)})
+        task.wait(0.08)
+        self:_buildTabContent()
+        self.InnerScroll.Position = UDim2.new(0, 12, 0, 0)
+        tween(self.InnerScroll, 0.18, {Position = UDim2.new(0, 0, 0, 0)})
+    else
+        self:_buildTabContent()
+    end
+end
+
 function EZUI:_buildHeaders()
     for _, c in ipairs(self.TabBar:GetChildren()) do 
-        if c:IsA("TextButton") then c:Destroy() end 
+        if c:IsA("TextButton") or c.Name == "TabBg" then c:Destroy() end 
     end
     
     local s = self:GetScreen()
@@ -982,19 +2209,59 @@ function EZUI:_buildHeaders()
     local n = #s.tabs
     if n == 0 then return end
 
-    self.ActiveLine.Size = UDim2.new(1/n, 0, 0, 2)
-    tween(self.ActiveLine, 0.25, {Position = UDim2.new((self.CurrentTabIndex-1)/n, 0, 1, 0)})
+    if self.ActiveLine then
+        self.ActiveLine.Size = UDim2.new(1/n, 0, 0, 2)
+        self.ActiveLine.BackgroundColor3 = self.Theme.AccentColor
+        tween(self.ActiveLine, 0.25, {Position = UDim2.new((self.CurrentTabIndex-1)/n, 0, 1, 0)})
+    end
 
     for idx, tab in ipairs(s.tabs) do
+        local isSelected = (idx == self.CurrentTabIndex)
+
         local btn = Instance.new("TextButton")
         btn.Size = UDim2.new(1/n, 0, 1, 0)
         btn.Position = UDim2.new((idx-1)/n, 0, 0, 0)
         btn.BackgroundTransparency = 1
-        btn.Text = tab.name
-        btn.Font = Enum.Font.GothamBold
-        btn.TextSize = 11
-        btn.TextColor3 = (idx == self.CurrentTabIndex) and self.Theme.TextWhite or self.Theme.TextGray
+        btn.Text = ""
         btn.Parent = self.TabBar
+
+        btn.MouseButton1Click:Connect(function()
+            self:SwitchTab(idx)
+        end)
+
+        local container = Instance.new("Frame")
+        container.Size = UDim2.fromScale(1, 1)
+        container.BackgroundTransparency = 1
+        container.Parent = btn
+
+        local layout = Instance.new("UIListLayout")
+        layout.FillDirection = Enum.FillDirection.Horizontal
+        layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        layout.VerticalAlignment = Enum.VerticalAlignment.Center
+        layout.Padding = UDim.new(0, 5)
+        layout.SortOrder = Enum.SortOrder.LayoutOrder
+        layout.Parent = container
+
+        if tab.icon and tab.icon ~= "" then
+            local tabIcon = Instance.new("ImageLabel")
+            tabIcon.Size = UDim2.fromOffset(13, 13)
+            tabIcon.BackgroundTransparency = 1
+            setIconImage(tabIcon, tab.icon)
+            tabIcon.ScaleType = Enum.ScaleType.Fit
+            tabIcon.LayoutOrder = 1
+            tabIcon.Parent = container
+        end
+
+        local txt = Instance.new("TextLabel")
+        txt.Size = UDim2.new(0, 0, 1, 0)
+        txt.AutomaticSize = Enum.AutomaticSize.X
+        txt.BackgroundTransparency = 1
+        txt.Text = tab.name
+        txt.Font = self.Font
+        txt.TextSize = 11
+        txt.TextColor3 = isSelected and self.Theme.TextWhite or self.Theme.TextGray
+        txt.LayoutOrder = 2
+        txt.Parent = container
     end
 end
 
@@ -1056,14 +2323,13 @@ function EZUI:Init()
             end
         end
     end
+    self:LoadConfig()
     self:_buildHeaders()
     self:_buildTabContent()
     self:_bindKeys()
 end
 
-----------------------------------------------------------------
--- INPUT BLOCKING & HOLD-TO-REPEAT HANDLING
-----------------------------------------------------------------
+-- Input blocking and hold repeat
 local BLOCK_NAME = "EZKeyBlock_Final"
 
 local blockedKeys = {
@@ -1078,7 +2344,7 @@ local blockedKeys = {
     [Enum.KeyCode.Delete] = true,
 }
 
--- Executor IsKeyDown Hook to prevent game scripts from reading navigation keys
+-- Block navigation keys from regular game input
 pcall(function()
     if hookmetamethod then
         local oldNamecall
@@ -1109,12 +2375,19 @@ local function sinkInput(actionName, inputState, inputObject)
     return Enum.ContextActionResult.Sink
 end
 
+local StarterGui = game:GetService("StarterGui")
+
 function EZUI:_bindKeys()
+    pcall(function()
+        self.SavedPlayerListEnabled = StarterGui:GetCoreGuiEnabled(Enum.CoreGuiType.PlayerList)
+        StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
+    end)
+
     ContextActionService:BindActionAtPriority(
         BLOCK_NAME, 
         sinkInput, 
         false, 
-        2147483647, 
+        3000, 
         Enum.KeyCode.Left, Enum.KeyCode.Right, 
         Enum.KeyCode.Up, Enum.KeyCode.Down,
         Enum.KeyCode.Tab, Enum.KeyCode.Return, Enum.KeyCode.KeypadEnter,
@@ -1123,6 +2396,13 @@ function EZUI:_bindKeys()
 end
 
 function EZUI:_unbindKeys()
+    pcall(function()
+        if self.SavedPlayerListEnabled ~= nil then
+            StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, self.SavedPlayerListEnabled)
+        else
+            StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, true)
+        end
+    end)
     ContextActionService:UnbindAction(BLOCK_NAME)
 end
 
@@ -1141,16 +2421,26 @@ function EZUI:_stopKeyHold()
     end
 end
 
-function EZUI:_processKeyAction(keyCode)
-    -- Prevent character movement caused by arrow keys when WASD is not held
-    if not isWASDDown() then
+local function maintainMovement()
+    if isWASDDown() then
         local char = LocalPlayer.Character
         local hum = char and char:FindFirstChildOfClass("Humanoid")
         if hum then
-            hum:Move(Vector3.zero, false)
+            local moveDir = Vector3.zero
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + Vector3.new(0, 0, -1) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir + Vector3.new(0, 0, 1) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir + Vector3.new(-1, 0, 0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + Vector3.new(1, 0, 0) end
+            if moveDir ~= Vector3.zero then
+                hum:Move(moveDir, true)
+            end
         end
     end
+end
 
+RunService.Stepped:Connect(maintainMovement)
+
+function EZUI:_processKeyAction(keyCode)
     local items = self:GetItems()
     if keyCode == Enum.KeyCode.Up then
         if #items == 0 then return end
@@ -1195,20 +2485,28 @@ function EZUI:_setupInputs()
         if input.KeyCode == self.ToggleKey then
             self.MenuVisible = not self.MenuVisible
             self.Window.Visible = self.MenuVisible
-            if self.MenuVisible then self:_bindKeys() else self:_unbindKeys(); self:_stopKeyHold() end
+            if self.MenuVisible then 
+                self:_bindKeys() 
+            else 
+                self:_unbindKeys() 
+                self:_stopKeyHold() 
+            end
+            task.defer(maintainMovement)
             return
         end
 
         if not self.MenuVisible then return end
 
         if input.KeyCode == Enum.KeyCode.Tab then
+            pcall(function()
+                StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
+            end)
             local s = self:GetScreen()
             if s and #s.tabs > 0 then
-                self.CurrentTabIndex = (self.CurrentTabIndex % #s.tabs) + 1
-                self.SelectedIndex = 1
-                self.ScrollOffset = 0
-                self:_buildHeaders()
-                self:_buildTabContent()
+                local nextTab = (self.CurrentTabIndex % #s.tabs) + 1
+                task.spawn(function()
+                    self:SwitchTab(nextTab)
+                end)
             end
         elseif input.KeyCode == Enum.KeyCode.Backspace or input.KeyCode == Enum.KeyCode.Delete then
             local s = self:GetScreen()
