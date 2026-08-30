@@ -616,8 +616,18 @@ function EZUI.new(config)
         self:SetPreviewShape(config.PreviewShape)
     end
     
-    if getgenv then
-        getgenv().EZUI_ActiveInstance = self
+    self.Icons = BUILTIN_ICONS
+    self.KeySystem = nil
+    if config.KeySystem or config.Flow or config.Key then
+        local ks = config.KeySystem or config.Key
+        if type(ks) == "string" or type(ks) == "number" then
+            ks = { Flow = tostring(ks) }
+        elseif ks == true or ks == nil then
+            ks = { Flow = tostring(config.Flow or config.ScriptId or "") }
+        elseif type(ks) == "table" and not ks.Flow and config.Flow then
+            ks.Flow = tostring(config.Flow)
+        end
+        self.KeySystem = ks
     end
 
     return self
@@ -2313,6 +2323,280 @@ function EZUI:_updateSliderOrSelector(amount)
     end
 end
 
+function EZUI:PromptKey(keyConfig, onSuccess)
+    if type(keyConfig) == "string" or type(keyConfig) == "number" then
+        keyConfig = { Flow = tostring(keyConfig) }
+    end
+    keyConfig = keyConfig or {}
+    local flow = keyConfig.Flow or keyConfig.flow or keyConfig.Slug or keyConfig.slug
+    local scriptId = keyConfig.ScriptId or keyConfig.scriptId
+    local title = keyConfig.Title or keyConfig.Header or "Key Verification"
+    local note = keyConfig.Note or keyConfig.Description or "Please enter your access key to unlock the script."
+    local getKeyUrl = keyConfig.GetKeyUrl or (flow and ("https://key.luaprotect.dev/lp/" .. tostring(flow))) or "https://key.luaprotect.dev"
+    local saveKey = keyConfig.SaveKey ~= false
+    local keyFileName = keyConfig.FileName or ((self.Title or "EZUI"):gsub("[%s_%-]", "_") .. "_key.txt")
+    
+    local hwid = ""
+    pcall(function() hwid = (gethwid and gethwid()) or "" end)
+
+    local function validateKeyApi(enteredKey)
+        if not enteredKey or enteredKey == "" then
+            return false, "Please enter a key."
+        end
+        local scopeParam = (flow and #tostring(flow) > 0 and ("flow=" .. tostring(flow)))
+            or (scriptId and #tostring(scriptId) > 0 and ("scriptId=" .. tostring(scriptId)))
+            or ""
+        if scopeParam == "" then
+            return false, "No Key Flow or Script configured."
+        end
+        local url = "https://api.luaprotect.dev/api/public/validate-key?" .. scopeParam .. "&key=" .. HttpService:UrlEncode(enteredKey) .. "&hwid=" .. HttpService:UrlEncode(hwid)
+        
+        local success, response = pcall(function()
+            return game:HttpGet(url)
+        end)
+        if not success then
+            return false, "Network error. Please try again."
+        end
+        local ok, data = pcall(function()
+            return HttpService:JSONDecode(response)
+        end)
+        if not ok or not data then
+            return false, "Server returned unexpected response."
+        end
+        if data.valid then
+            return true, data
+        else
+            return false, data.reason or data.error or "Invalid key."
+        end
+    end
+
+    -- 1. Try Auto-Validating saved key
+    if saveKey and readfile and isfile then
+        local savedPath = (isfolder and isfolder("EZUI_Configs")) and ("EZUI_Configs/" .. keyFileName) or keyFileName
+        local hasFile = false
+        pcall(function() hasFile = isfile(savedPath) end)
+        if hasFile then
+            local savedContent = nil
+            pcall(function() savedContent = readfile(savedPath) end)
+            if savedContent and #savedContent > 0 then
+                local trimmedKey = savedContent:gsub("%s+", "")
+                local valid = validateKeyApi(trimmedKey)
+                if valid then
+                    self:Notify({
+                        Title = "Key System",
+                        Text = "Saved key validated! Welcome back.",
+                        Type = "Info",
+                        Duration = 3
+                    })
+                    if onSuccess then onSuccess(trimmedKey) end
+                    return
+                end
+            end
+        end
+    end
+
+    -- 2. Build Key Prompt Modal
+    self:_unbindKeys()
+    if self.Window then self.Window.Visible = false end
+
+    local modalGui = self.Gui or CoreGui:FindFirstChild("EZUI_Library")
+    if not modalGui then
+        modalGui = Instance.new("ScreenGui")
+        modalGui.Name = "EZUI_KeyModal"
+        modalGui.ResetOnSpawn = false
+        pcall(function() modalGui.Parent = CoreGui end)
+        if not modalGui.Parent then modalGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
+    end
+
+    local overlay = Instance.new("Frame")
+    overlay.Name = "KeyModalOverlay"
+    overlay.Size = UDim2.fromScale(1, 1)
+    overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    overlay.BackgroundTransparency = 0.5
+    overlay.BorderSizePixel = 0
+    overlay.Parent = modalGui
+
+    local modal = Instance.new("Frame")
+    modal.Name = "KeyModal"
+    modal.Size = UDim2.fromOffset(340, 220)
+    modal.AnchorPoint = Vector2.new(0.5, 0.5)
+    modal.Position = UDim2.fromScale(0.5, 0.5)
+    modal.BackgroundColor3 = self.Theme.WindowBg
+    modal.BorderSizePixel = 0
+    modal.Parent = overlay
+
+    local modalCorner = Instance.new("UICorner", modal)
+    modalCorner.CornerRadius = UDim.new(0, 10)
+
+    local modalStroke = Instance.new("UIStroke", modal)
+    modalStroke.Thickness = 1.5
+    modalStroke.Color = self.Theme.AccentColor
+    modalStroke.Transparency = 0.3
+
+    -- Header
+    local header = Instance.new("Frame", modal)
+    header.Size = UDim2.new(1, 0, 0, 36)
+    header.BackgroundColor3 = self.Theme.HeaderBg
+    header.BorderSizePixel = 0
+    Instance.new("UICorner", header).CornerRadius = UDim.new(0, 10)
+
+    local headerFiller = Instance.new("Frame", header)
+    headerFiller.Size = UDim2.new(1, 0, 0, 8)
+    headerFiller.Position = UDim2.new(0, 0, 1, -8)
+    headerFiller.BackgroundColor3 = self.Theme.HeaderBg
+    headerFiller.BorderSizePixel = 0
+
+    local headerTitle = Instance.new("TextLabel", header)
+    headerTitle.Size = UDim2.new(1, -20, 1, 0)
+    headerTitle.Position = UDim2.fromOffset(12, 0)
+    headerTitle.BackgroundTransparency = 1
+    headerTitle.Text = title
+    headerTitle.TextColor3 = self.Theme.AccentColor
+    headerTitle.Font = self.Font
+    headerTitle.TextSize = 13
+    headerTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+    local noteLabel = Instance.new("TextLabel", modal)
+    noteLabel.Size = UDim2.new(1, -24, 0, 26)
+    noteLabel.Position = UDim2.fromOffset(12, 42)
+    noteLabel.BackgroundTransparency = 1
+    noteLabel.Text = note
+    noteLabel.TextColor3 = self.Theme.TextGray
+    noteLabel.Font = self.Font
+    noteLabel.TextSize = 11
+    noteLabel.TextWrapped = true
+    noteLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+    -- Key Input TextBox
+    local inputFrame = Instance.new("Frame", modal)
+    inputFrame.Size = UDim2.new(1, -24, 0, 34)
+    inputFrame.Position = UDim2.fromOffset(12, 74)
+    inputFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+    inputFrame.BorderSizePixel = 0
+    Instance.new("UICorner", inputFrame).CornerRadius = UDim.new(0, 6)
+
+    local inputStroke = Instance.new("UIStroke", inputFrame)
+    inputStroke.Thickness = 1
+    inputStroke.Color = Color3.fromRGB(50, 50, 65)
+
+    local textBox = Instance.new("TextBox", inputFrame)
+    textBox.Size = UDim2.new(1, -16, 1, 0)
+    textBox.Position = UDim2.fromOffset(8, 0)
+    textBox.BackgroundTransparency = 1
+    textBox.PlaceholderText = "Paste your key here..."
+    textBox.PlaceholderColor3 = Color3.fromRGB(110, 110, 130)
+    textBox.TextColor3 = self.Theme.TextWhite
+    textBox.Font = self.Font
+    textBox.TextSize = 12
+    textBox.ClearTextOnFocus = false
+
+    -- Status Message
+    local statusText = Instance.new("TextLabel", modal)
+    statusText.Size = UDim2.new(1, -24, 0, 24)
+    statusText.Position = UDim2.fromOffset(12, 114)
+    statusText.BackgroundTransparency = 1
+    statusText.Text = ""
+    statusText.TextColor3 = Color3.fromRGB(240, 80, 80)
+    statusText.Font = self.Font
+    statusText.TextSize = 11
+    statusText.TextTruncate = Enum.TextTruncate.AtEnd
+
+    -- Action Buttons
+    local submitBtn = Instance.new("TextButton", modal)
+    submitBtn.Size = UDim2.new(0.5, -16, 0, 34)
+    submitBtn.Position = UDim2.fromOffset(12, 144)
+    submitBtn.BackgroundColor3 = self.Theme.AccentColor
+    submitBtn.Text = "Submit Key"
+    submitBtn.TextColor3 = self.Theme.TextWhite
+    submitBtn.Font = self.Font
+    submitBtn.TextSize = 12
+    Instance.new("UICorner", submitBtn).CornerRadius = UDim.new(0, 6)
+
+    local getKeyBtn = Instance.new("TextButton", modal)
+    getKeyBtn.Size = UDim2.new(0.5, -16, 0, 34)
+    getKeyBtn.Position = UDim2.new(0.5, 4, 0, 144)
+    getKeyBtn.BackgroundColor3 = Color3.fromRGB(32, 32, 42)
+    getKeyBtn.Text = "Get Key (Copy Link)"
+    getKeyBtn.TextColor3 = self.Theme.TextGray
+    getKeyBtn.Font = self.Font
+    getKeyBtn.TextSize = 11
+    Instance.new("UICorner", getKeyBtn).CornerRadius = UDim.new(0, 6)
+
+    local isSubmitting = false
+
+    local function doSubmit()
+        if isSubmitting then return end
+        local rawKey = textBox.Text:gsub("%s+", "")
+        if rawKey == "" then
+            statusText.TextColor3 = Color3.fromRGB(240, 80, 80)
+            statusText.Text = "Please enter a key."
+            return
+        end
+
+        isSubmitting = true
+        statusText.TextColor3 = self.Theme.AccentColor
+        statusText.Text = "Checking key..."
+
+        task.spawn(function()
+            local ok, res = validateKeyApi(rawKey)
+            if ok then
+                statusText.TextColor3 = Color3.fromRGB(80, 230, 120)
+                statusText.Text = "Key Verified! Loading..."
+
+                if saveKey and writefile then
+                    pcall(function()
+                        if isfolder and not isfolder("EZUI_Configs") then
+                            makefolder("EZUI_Configs")
+                        end
+                        local path = (isfolder and isfolder("EZUI_Configs")) and ("EZUI_Configs/" .. keyFileName) or keyFileName
+                        writefile(path, rawKey)
+                    end)
+                end
+
+                task.wait(0.5)
+                tween(overlay, 0.25, {BackgroundTransparency = 1})
+                local t = tween(modal, 0.25, {Position = UDim2.new(0.5, 0, 0.5, -20), BackgroundTransparency = 1})
+                t.Completed:Connect(function()
+                    overlay:Destroy()
+                    if onSuccess then onSuccess(rawKey) end
+                end)
+            else
+                statusText.TextColor3 = Color3.fromRGB(240, 80, 80)
+                statusText.Text = tostring(res)
+                isSubmitting = false
+            end
+        end)
+    end
+
+    submitBtn.MouseButton1Click:Connect(doSubmit)
+    textBox.FocusLost:Connect(function(enterPressed)
+        if enterPressed then doSubmit() end
+    end)
+
+    getKeyBtn.MouseButton1Click:Connect(function()
+        pcall(function()
+            if setclipboard then
+                setclipboard(getKeyUrl)
+                statusText.TextColor3 = Color3.fromRGB(80, 230, 120)
+                statusText.Text = "Link copied to clipboard! Open in browser."
+            else
+                statusText.TextColor3 = self.Theme.TextGray
+                statusText.Text = getKeyUrl
+            end
+        end)
+    end)
+end
+
+function EZUI:RequireKey(keyConfig, onSuccess)
+    self:PromptKey(keyConfig, function(key)
+        if type(onSuccess) == "function" then
+            onSuccess(key)
+        end
+        if self.Window then self.Window.Visible = true end
+        self:_bindKeys()
+    end)
+end
+
 function EZUI:Init()
     for _, screen in pairs(self.Screens) do
         for _, tab in pairs(screen.tabs) do
@@ -2326,7 +2610,18 @@ function EZUI:Init()
     self:LoadConfig()
     self:_buildHeaders()
     self:_buildTabContent()
-    self:_bindKeys()
+
+    if self.KeySystem then
+        self:PromptKey(self.KeySystem, function(validatedKey)
+            if self.KeySystem.OnSuccess then
+                pcall(function() self.KeySystem.OnSuccess(validatedKey) end)
+            end
+            if self.Window then self.Window.Visible = true end
+            self:_bindKeys()
+        end)
+    else
+        self:_bindKeys()
+    end
 end
 
 -- Input blocking and hold repeat

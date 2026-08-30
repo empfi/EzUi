@@ -131,8 +131,50 @@ Initializes a new interface window.
 | `NotifyPosition` | string | `"TopRight"` | Toast corner anchor (`"TopRight"`, `"TopLeft"`, `"BottomRight"`, `"BottomLeft"`). |
 | `NotifyDuration` | number | `4` | Default duration in seconds before toasts fade out. |
 | `ToggleKey` | Enum.KeyCode | `RightShift` | Keybind used to show and hide the window. |
+| `KeySystem` | table \| string | `nil` | Native key system configuration or Key Flow slug. |
 | `AutoSave` | boolean | `true` | Persists user theme/font selections to the executor workspace. |
 | `AutoLoad` | boolean | `true` | Restores saved settings on execution. |
+
+---
+
+### Built-in Key System
+
+EzUI includes a native, theme-matching Key System modal powered by LuaProtect's public validation API. When configured, EzUI automatically presents the key verification modal and only opens the main interface once a valid key is provided.
+
+```lua
+local ui = UI.new({
+    Title = "My Hub",
+    Theme = "Cyan",
+    KeySystem = {
+        Flow = "528718",                       -- Your LuaProtect Key Flow slug / ID
+        Title = "Key Verification",             -- Modal header title
+        Note = "Join our Discord to get a key", -- Subtitle / instructions
+        GetKeyUrl = "https://key.luaprotect.dev/lp/528718", -- Link copied when clicking "Get Key"
+        SaveKey = true,                        -- Automatically saves validated key to workspace
+        OnSuccess = function(key)
+            print("Access granted with key:", key)
+        end
+    }
+})
+
+-- Define your screens and tabs as usual...
+ui:CreateScreen("main")
+local mainTab = ui:AddTab("main", "Home", UI.Icons.Home)
+ui:AddToggle(mainTab, "Godmode", false, function(v) end)
+
+-- Init automatically validates saved keys or shows the modal:
+ui:Init()
+```
+
+You can also prompt the key system manually at any time:
+```lua
+ui:RequireKey({
+    Flow = "528718",
+    Title = "VIP Access Required"
+}, function(key)
+    print("Unlocked!")
+end)
+```
 
 ---
 
