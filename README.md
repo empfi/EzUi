@@ -139,20 +139,39 @@ Initializes a new interface window.
 
 ### Built-in Key System
 
-EzUI includes a native, theme-matching Key System modal powered by LuaProtect's public validation API. When configured, EzUI automatically presents the key verification modal and only opens the main interface once a valid key is provided.
+EzUI includes a fully automated Key System integrated directly into the normal window layout using native `AddInput` and button rows. When configured, EzUI displays a dedicated key tab, handles validation via LuaProtect's public API, auto-saves valid keys to workspace, and automatically unlocks the main menu once verified.
 
+#### Simple Usage
+```lua
+local ui = UI.new({
+    Title = "My Hub",
+    Theme = "Cyan",
+    KeySystem = "528718" -- Your Flow ID or slug
+})
+```
+
+#### Full Customization Options
 ```lua
 local ui = UI.new({
     Title = "My Hub",
     Theme = "Cyan",
     KeySystem = {
         Flow = "528718",                       -- Your LuaProtect Key Flow slug / ID
-        Title = "Key Verification",             -- Modal header title
-        Note = "Join our Discord to get a key", -- Subtitle / instructions
-        GetKeyUrl = "https://key.luaprotect.dev/lp/528718", -- Link copied when clicking "Get Key"
-        SaveKey = true,                        -- Automatically saves validated key to workspace
+        Title = "License",                     -- Tab name (default: "License")
+        Icon = UI.Icons.Lock,                  -- Tab icon
+        Note = "Join discord.gg/myhub for key",-- Subtitle separator note
+        InputLabel = "Key",                    -- Label on input row
+        InputPlaceholder = "Paste key here...",-- Placeholder text
+        SubmitText = "Submit Key",             -- Text on submit button
+        GetKeyText = "Get Key (Copy Link)",    -- Text on copy link button
+        GetKeyUrl = "https://key.luaprotect.dev/lp/528718", -- Link copied
+        SaveKey = true,                        -- Auto-saves validated key to workspace (default: true)
+        FileName = "myhub_key.txt",            -- Custom key cache file name
         OnSuccess = function(key)
             print("Access granted with key:", key)
+        end,
+        OnFailure = function(reason)
+            print("Key failed:", reason)
         end
     }
 })
@@ -162,18 +181,8 @@ ui:CreateScreen("main")
 local mainTab = ui:AddTab("main", "Home", UI.Icons.Home)
 ui:AddToggle(mainTab, "Godmode", false, function(v) end)
 
--- Init automatically validates saved keys or shows the modal:
+-- Init handles file checks, input bindings, and auto-unlocking:
 ui:Init()
-```
-
-You can also prompt the key system manually at any time:
-```lua
-ui:RequireKey({
-    Flow = "528718",
-    Title = "VIP Access Required"
-}, function(key)
-    print("Unlocked!")
-end)
 ```
 
 ---

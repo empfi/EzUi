@@ -2452,14 +2452,29 @@ function EZUI:AddKeyAuth(flowConfig)
     flowConfig = flowConfig or {}
     local flow = flowConfig.Flow or flowConfig.flow or flowConfig.Slug or flowConfig.slug
     local scriptId = flowConfig.ScriptId or flowConfig.scriptId
-    local fileName = flowConfig.FileName or ((self.Title or "EZUI"):gsub("[%s_%-]", "_") .. "_key.txt")
+    local tabTitle = flowConfig.Title or flowConfig.TabName or flowConfig.Name or "License"
+    local tabIcon = flowConfig.Icon or flowConfig.TabIcon or BUILTIN_ICONS.Lock
+    local noteText = flowConfig.Note or flowConfig.Description or flowConfig.Subtitle
+    local inputLabel = flowConfig.InputLabel or flowConfig.InputText or "Key"
+    local inputPlaceholder = flowConfig.InputPlaceholder or flowConfig.Placeholder or "Paste key here..."
+    local inputIcon = flowConfig.InputIcon or BUILTIN_ICONS.Key
+    local submitText = flowConfig.SubmitText or flowConfig.ButtonText or "Submit Key"
+    local submitIcon = flowConfig.SubmitIcon or BUILTIN_ICONS.Check
+    local getKeyText = flowConfig.GetKeyText or flowConfig.LinkText or "Get Key (Copy Link)"
+    local getKeyIcon = flowConfig.GetKeyIcon or BUILTIN_ICONS.Link
     local getKeyUrl = flowConfig.GetKeyUrl or (flow and ("https://key.luaprotect.dev/lp/" .. tostring(flow))) or "https://key.luaprotect.dev"
+    local fileName = flowConfig.FileName or ((self.Title or "EZUI"):gsub("[%s_%-]", "_") .. "_key.txt")
     local saveKey = flowConfig.SaveKey ~= false
     local onSuccess = flowConfig.OnSuccess
+    local onFailure = flowConfig.OnFailure
 
     -- Create 'auth' screen inside the normal UI
     self:CreateScreen("auth")
-    local authTab = self:AddTab("auth", "License", BUILTIN_ICONS.Lock)
+    local authTab = self:AddTab("auth", tabTitle, tabIcon)
+
+    if noteText and #noteText > 0 then
+        self:AddSeparator(authTab, noteText)
+    end
     
     local enteredKey = ""
     if saveKey and isfile and readfile then
@@ -2471,11 +2486,11 @@ function EZUI:AddKeyAuth(flowConfig)
         end)
     end
 
-    self:AddInput(authTab, "Key", "Paste key here...", enteredKey, function(text)
+    self:AddInput(authTab, inputLabel, inputPlaceholder, enteredKey, function(text)
         enteredKey = text:gsub("%s+", "")
-    end, BUILTIN_ICONS.Key)
+    end, inputIcon)
 
-    self:AddButton(authTab, "Submit Key", function()
+    self:AddButton(authTab, submitText, function()
         if not enteredKey or enteredKey == "" then
             self:Notify({ Title = "Key System", Text = "Please enter a key first.", Type = "Warning" })
             return
@@ -2500,20 +2515,23 @@ function EZUI:AddKeyAuth(flowConfig)
                 if onSuccess then pcall(function() onSuccess(enteredKey) end) end
             else
                 self:Notify({ Title = "Access Denied", Text = tostring(msg), Type = "Error" })
+                if onFailure then pcall(function() onFailure(msg) end) end
             end
         end)
-    end, BUILTIN_ICONS.Check)
+    end, submitIcon)
 
-    self:AddButton(authTab, "Get Key (Copy Link)", function()
-        pcall(function()
-            if setclipboard then
-                setclipboard(getKeyUrl)
-                self:Notify({ Title = "Key Link", Text = "Link copied to clipboard!", Type = "Info" })
-            else
-                self:Notify({ Title = "Key Link", Text = getKeyUrl, Type = "Info" })
-            end
-        end)
-    end, BUILTIN_ICONS.Link)
+    if getKeyUrl and getKeyUrl ~= "" and flowConfig.ShowGetKey ~= false then
+        self:AddButton(authTab, getKeyText, function()
+            pcall(function()
+                if setclipboard then
+                    setclipboard(getKeyUrl)
+                    self:Notify({ Title = "Key Link", Text = "Link copied to clipboard!", Type = "Info" })
+                else
+                    self:Notify({ Title = "Key Link", Text = getKeyUrl, Type = "Info" })
+                end
+            end)
+        end, getKeyIcon)
+    end
 
     -- Auto-check saved key
     self.KeyAuthAutoCheck = function(readyCallback)
