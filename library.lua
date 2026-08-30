@@ -1834,6 +1834,31 @@ function EZUI:AddButton(tab, name, onClick, icon)
     return item
 end
 
+function EZUI:AddInput(tab, name, placeholder, default, onEnter, icon)
+    -- Handle signature overload: AddInput(tab, name, placeholder, onEnter, icon)
+    if type(default) == "function" then
+        icon = onEnter
+        onEnter = default
+        default = ""
+    elseif type(placeholder) == "function" then
+        icon = default
+        onEnter = placeholder
+        placeholder = "Type here..."
+        default = ""
+    end
+
+    local item = {
+        type = "input",
+        name = name,
+        placeholder = placeholder or "Type here...",
+        value = default or "",
+        onEnter = onEnter,
+        icon = icon
+    }
+    table.insert(tab.items, item)
+    return item
+end
+
 function EZUI:AddSeparator(tab, name, icon)
     local item = { type = "sep", name = name or "", icon = icon }
     table.insert(tab.items, item)
@@ -2059,7 +2084,7 @@ function EZUI:_buildTabContent()
             local labelX = 16
             local labelWidthOffset = 24
 
-            if item.type == "toggle" or item.type == "slider" or item.type == "selector" then
+            if item.type == "toggle" or item.type == "slider" or item.type == "selector" or item.type == "input" then
                 labelWidthOffset = 135
             elseif item.type == "nav" then
                 labelWidthOffset = 40
@@ -2172,6 +2197,56 @@ function EZUI:_buildTabContent()
                 valLabel.Parent = row
                 
                 self.RowInstances[i].SelectorLabel = valLabel
+
+            elseif item.type == "input" then
+                local boxFrame = Instance.new("Frame")
+                boxFrame.Size = UDim2.fromOffset(120, 20)
+                boxFrame.AnchorPoint = Vector2.new(1, 0.5)
+                boxFrame.Position = UDim2.new(1, -12, 0.5, 0)
+                boxFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
+                boxFrame.BorderSizePixel = 0
+                boxFrame.Parent = row
+
+                local boxCorner = Instance.new("UICorner")
+                boxCorner.CornerRadius = UDim.new(0, 4)
+                boxCorner.Parent = boxFrame
+
+                local boxStroke = Instance.new("UIStroke")
+                boxStroke.Thickness = 1
+                boxStroke.Color = Color3.fromRGB(50, 50, 65)
+                boxStroke.Parent = boxFrame
+
+                local tb = Instance.new("TextBox")
+                tb.Size = UDim2.new(1, -8, 1, 0)
+                tb.Position = UDim2.fromOffset(4, 0)
+                tb.BackgroundTransparency = 1
+                tb.PlaceholderText = item.placeholder or "Type here..."
+                tb.PlaceholderColor3 = Color3.fromRGB(110, 110, 125)
+                tb.Text = item.value or ""
+                tb.TextColor3 = self.Theme.TextWhite
+                tb.Font = self.Font
+                tb.TextSize = 11
+                tb.ClearTextOnFocus = false
+                tb.TextXAlignment = Enum.TextXAlignment.Left
+                tb.TextTruncate = Enum.TextTruncate.AtEnd
+                tb.Parent = boxFrame
+
+                tb.Focused:Connect(function()
+                    self:_unbindKeys()
+                    boxStroke.Color = self.Theme.AccentColor
+                end)
+
+                tb.FocusLost:Connect(function(enterPressed)
+                    self:_bindKeys()
+                    boxStroke.Color = Color3.fromRGB(50, 50, 65)
+                    item.value = tb.Text
+                    if item.onEnter then
+                        item.onEnter(tb.Text, item, enterPressed)
+                    end
+                end)
+
+                self.RowInstances[i].InputBox = boxFrame
+                self.RowInstances[i].TextBox = tb
 
             elseif item.type == "nav" then
                 local chev = createChevron(row, self.Theme)
@@ -2288,6 +2363,10 @@ function EZUI:_activateItem()
         if item.onChange then item.onChange(item.value, item) end
     elseif item.type == "button" then
         if item.onClick then item.onClick(item) end
+    elseif item.type == "input" then
+        if inst and inst.TextBox then
+            inst.TextBox:CaptureFocus()
+        end
     elseif item.type == "nav" then
         self.CurrentScreen = item.target
         local targetScr = self:GetScreen()
@@ -2321,6 +2400,49 @@ function EZUI:_updateSliderOrSelector(amount)
         if item.onChange then item.onChange(item.value, item) end
         self:_updateSidePanel()
     end
+end
+
+function EZUI:ValidateKey(key, flowOrConfig, callback)
+    if type(flowOrConfig) == "string" or type(flowOrConfig) == "number" then
+        flowOrConfig = { Flow = tostring(flowOrConfig) }
+    end
+    flowOrConfig = flowOrConfig or {}
+    local flow = flowOrConfig.Flow or flowOrConfig.flow or flowOrConfig.Slug or flowOrConfig.slug
+    local scriptId = flowOrConfig.ScriptId or flowOrConfig.scriptId
+    local hwid = ""
+    pcall(function() hwid = (gethwid and gethwid()) or "" end)
+
+    local scopeParam = (flow and #tostring(flow) > 0 and ("flow=" .. tostring(flow)))
+        or (scriptId and #tostring(scriptId) > 0 and ("scriptId=" .. tostring(scriptId)))
+        or ""
+
+    if scopeParam == "" then
+        if callback then callback(false, "No Key Flow configured") end
+        return false, "No Key Flow configured"
+    end
+
+    local url = "https://api.luaprotect.dev/api/public/validate-key?" .. scopeParam .. "&key=" .. HttpService:UrlEncode(tostring(key or "")) .. "&hwid=" .. HttpService:UrlEncode(hwid)
+    
+    local success, response = pcall(function()
+        return game:HttpGet(url)
+    end)
+    if not success then
+        if callback then callback(false, "Network error. Please try again.") end
+        return false, "Network error. Please try again."
+    end
+
+    local ok, data = pcall(function()
+        return HttpService:JSONDecode(response)
+    end)
+    if not ok or not data then
+        if callback then callback(false, "Server returned invalid response") end
+        return false, "Server returned invalid response"
+    end
+
+    local isValid = (data.valid == true)
+    local reason = data.reason or data.error or (isValid and "Key verified" or "Invalid key")
+    if callback then callback(isValid, reason, data) end
+    return isValid, reason, data
 end
 
 function EZUI:PromptKey(keyConfig, onSuccess)

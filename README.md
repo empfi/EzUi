@@ -223,6 +223,18 @@ ui:AddSlider(tab, "FOV", 70, 120, 90, 1, function(value)
 end, UI.Icons.Eye)
 ```
 
+#### `ui:AddInput(tab, label, placeholder, [defaultValue], [onEnterCallback], [icon])`
+Creates an inline text input box. When selected or clicked, keyboard navigation is automatically paused so users can type or paste freely without triggering menu keys.
+- `placeholder` *(string)*: Ghost placeholder text.
+- `defaultValue` *(string)*: Initial text value.
+- `onEnterCallback` *(function(text: string, item: table, enterPressed: boolean))*: Triggered when user finishes typing or presses Enter.
+
+```lua
+ui:AddInput(tab, "License Key", "Paste key here...", "", function(text)
+    print("Entered key:", text)
+end, UI.Icons.Key)
+```
+
 #### `ui:AddButton(tab, label, callback, [icon])`
 Creates a clickable action button.
 
