@@ -2411,6 +2411,8 @@ function EZUI:ValidateKey(key, flowOrConfig, callback)
     local scriptId = flowOrConfig.ScriptId or flowOrConfig.scriptId
     local hwid = ""
     pcall(function() hwid = (gethwid and gethwid()) or "" end)
+    local plrUserId = LocalPlayer and tostring(LocalPlayer.UserId) or ""
+    local plrUsername = LocalPlayer and tostring(LocalPlayer.Name) or ""
 
     local scopeParam = (flow and #tostring(flow) > 0 and ("flow=" .. tostring(flow)))
         or (scriptId and #tostring(scriptId) > 0 and ("scriptId=" .. tostring(scriptId)))
@@ -2421,7 +2423,11 @@ function EZUI:ValidateKey(key, flowOrConfig, callback)
         return false, "No Key Flow configured"
     end
 
-    local url = "https://api.luaprotect.dev/api/public/validate-key?" .. scopeParam .. "&key=" .. HttpService:UrlEncode(tostring(key or "")) .. "&hwid=" .. HttpService:UrlEncode(hwid)
+    local url = "https://api.luaprotect.dev/api/public/validate-key?" .. scopeParam 
+        .. "&key=" .. HttpService:UrlEncode(tostring(key or "")) 
+        .. "&hwid=" .. HttpService:UrlEncode(hwid)
+        .. "&userId=" .. HttpService:UrlEncode(plrUserId)
+        .. "&username=" .. HttpService:UrlEncode(plrUsername)
     
     local success, response = pcall(function()
         return game:HttpGet(url)
